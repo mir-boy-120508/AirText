@@ -12,7 +12,6 @@
 
     <style>
         html, body { height: 100%; margin: 0; font-family: -apple-system, sans-serif; background: #f2f2f7; overflow: hidden; }
-        /* viewはデフォルトですべて完全に非表示(display:none)にする */
         .view { display: none; height: 100vh; width: 100%; position: absolute; top: 0; left: 0; box-sizing: border-box; }
         
         /* ログイン画面 */
@@ -30,7 +29,6 @@
         .contact-item { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; align-items: center; cursor: pointer; position: relative; }
         .avatar { width: 50px; height: 50px; background: #007aff; border-radius: 50%; margin-right: 15px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px; object-fit: cover; }
         .badge { position: absolute; right: 25px; background: #ff3b30; color: white; padding: 4px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; }
-        /* プラスボタンは絶対配置ではなく、ホーム画面の中（右下）に完全に固定する */
         .add-btn { position: absolute; bottom: 30px; right: 30px; width: 65px; height: 65px; background: #007aff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 35px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); cursor: pointer; z-index: 99; }
         .icon-btn { font-size: 24px; cursor: pointer; background: none; border: none; padding: 5px; }
 
@@ -124,7 +122,7 @@
     var auth = firebase.auth();
 
     // ★ここに取得したGeminiのAPIキーを貼り付ける★
-    var GEMINI_API_KEY = "AQ.Ab8RN6K0DdUp0lRTdqVHbXsorh_LOaxzFvs4i2oaJjuKp1p9hg";
+    var GEMINI_API_KEY = "★ここに取得したGeminiのAPIキーを貼り付ける★";
 
     var me = null, targetEmail = null, chatUnsub = null;
     var myName = "", myAvatar = "";
@@ -139,14 +137,14 @@
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.type = 'sine';
             osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-            osc.frequency.setValueAtTime(880.00, applicationContext.currentTime + 0.1);
+            // タイポを修正：applicationContext から audioCtx へ
+            osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.1);
             gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
             osc.start(); osc.stop(audioCtx.currentTime + 0.4);
         } catch(e) {}
     }
 
-    // 古いSafariでも確実に重ならない画面切り替え関数
     function show(id) {
         var views = ['loginView', 'homeView', 'chatView', 'settingsView'];
         for (var i = 0; i < views.length; i++) {
@@ -154,13 +152,7 @@
             if (v) { v.style.display = 'none'; }
         }
         var target = document.getElementById(id);
-        if (target) {
-            if (id === 'loginView') {
-                target.style.display = 'flex';
-            } else {
-                target.style.display = 'flex';
-            }
-        }
+        if (target) { target.style.display = 'flex'; }
     }
 
     // Googleログイン
@@ -376,7 +368,7 @@
         };
 
         var requestBody = JSON.stringify({
-            contents: [{ parts: [{ text: userText + " (親しみやすい友達として短めに返答してください。)" }] }]
+            contents: [{ parts: [{ text: userText + " (条件: 親しみやすい友達として、絶対に2文以内の短い日本語で気さくに返答してください。)" }] }]
         });
         xhr.send(requestBody);
     }
