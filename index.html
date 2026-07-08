@@ -12,36 +12,43 @@
 
     <style>
         html, body { height: 100%; margin: 0; font-family: -apple-system, sans-serif; background: #f2f2f7; overflow: hidden; }
-        .view { display: none; height: 100vh; flex-direction: column; }
+        /* viewはデフォルトですべて完全に非表示(display:none)にする */
+        .view { display: none; height: 100vh; width: 100%; position: absolute; top: 0; left: 0; box-sizing: border-box; }
         
         /* ログイン画面 */
-        #loginView { background: #000; color: white; display: flex; justify-content: center; align-items: center; }
-        .login-box { width: 320px; text-align: center; padding: 20px; }
+        #loginView { background: #000; color: white; justify-content: center; align-items: center; }
+        .login-box { width: 320px; text-align: center; padding: 20px; margin: auto; }
         .login-box input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: none; background: #1c1c1e; color: white; font-size: 16px; -webkit-appearance: none; box-sizing: border-box; }
         .login-box button { width: 100%; padding: 15px; border-radius: 12px; border: none; background: #007aff; color: white; font-size: 16px; cursor: pointer; margin-bottom: 12px; font-weight: bold; }
         .google-btn { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #ddd; background: white; color: #333; font-size: 16px; cursor: pointer; margin-bottom: 15px; font-weight: bold; }
         .switch-link { color: #007aff; cursor: pointer; text-decoration: underline; font-size: 14px; }
 
         /* ホーム画面（AirText） */
-        #homeView { background: white; display: flex; }
-        .header { padding: 15px 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; }
-        .contact-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        #homeView { background: white; flex-direction: column; }
+        .header { padding: 15px 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; height: 60px; box-sizing: border-box; }
+        .contact-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; background: white; }
         .contact-item { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; align-items: center; cursor: pointer; position: relative; }
         .avatar { width: 50px; height: 50px; background: #007aff; border-radius: 50%; margin-right: 15px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px; object-fit: cover; }
         .badge { position: absolute; right: 25px; background: #ff3b30; color: white; padding: 4px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; }
-        .add-btn { position: fixed; bottom: 30px; right: 30px; width: 65px; height: 65px; background: #007aff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 35px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); cursor: pointer; z-index: 99; }
+        /* プラスボタンは絶対配置ではなく、ホーム画面の中（右下）に完全に固定する */
+        .add-btn { position: absolute; bottom: 30px; right: 30px; width: 65px; height: 65px; background: #007aff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 35px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); cursor: pointer; z-index: 99; }
         .icon-btn { font-size: 24px; cursor: pointer; background: none; border: none; padding: 5px; }
 
         /* チャット画面 */
-        #chatView { background: white; }
-        .chat-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; }
-        .message-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; background: #fff; height: calc(100vh - 130px); }
+        #chatView { background: white; flex-direction: column; }
+        .chat-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; height: 60px; box-sizing: border-box; }
+        .message-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; background: #fff; }
         .msg { max-width: 75%; padding: 12px 16px; border-radius: 20px; margin-bottom: 8px; font-size: 16px; line-height: 1.4; word-wrap: break-word; }
         .sent { background: #007aff; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
         .received { background: #e5e5ea; color: black; align-self: flex-start; border-bottom-left-radius: 4px; }
         
-        .input-bar { padding: 10px 15px; display: flex; background: white; border-top: 1px solid #ddd; align-items: center; height: 50px; }
+        .input-bar { padding: 10px 15px; display: flex; background: white; border-top: 1px solid #ddd; align-items: center; height: 60px; box-sizing: border-box; }
         .input-bar input[type="text"] { flex: 1; padding: 12px 18px; border: 1px solid #ddd; border-radius: 25px; outline: none; font-size: 16px; -webkit-appearance: none; }
+
+        /* 設定画面 */
+        #settingsView { background: white; padding: 30px; align-items: center; flex-direction: column; }
+        .setting-box { width: 100%; max-width: 350px; text-align: center; margin-top: 50px; }
+        .setting-box input[type="text"] { width: 100%; padding: 12px; margin: 20px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -52,7 +59,7 @@
 
 <div class="view" id="loginView">
     <div class="login-box">
-        <h1 id="authTitle" style="font-size: 40px; margin-bottom: 30px;">AirText</h1>
+        <h1 id="authTitle" style="font-size: 40px; margin-bottom: 30px; font-family: sans-serif;">AirText</h1>
         <button class="google-btn" id="googleLoginBtn">🌐 Googleログイン</button>
         <div style="margin: 15px 0; color: #666;">または</div>
         <input type="email" id="email" placeholder="メールアドレス">
@@ -63,14 +70,12 @@
 </div>
 
 <div class="view" id="homeView">
-    <div style="width:100%; display:flex; flex-direction:column;">
-        <div class="header">
-            <button class="icon-btn" id="toSettingsBtn">⚙️</button>
-            <h2 style="margin:0; font-size:24px;">AirText</h2>
-            <div id="myEmail" style="font-size:12px; color:#888;"></div>
-        </div>
-        <div class="contact-list" id="contactList"></div>
+    <div class="header">
+        <button class="icon-btn" id="toSettingsBtn">⚙️</button>
+        <h2 style="margin:0; font-size:24px;">AirText</h2>
+        <div id="myEmail" style="font-size:12px; color:#888;"></div>
     </div>
+    <div class="contact-list" id="contactList"></div>
     <div class="add-btn" id="addBtn">+</div>
 </div>
 
@@ -119,7 +124,7 @@
     var auth = firebase.auth();
 
     // ★ここに取得したGeminiのAPIキーを貼り付ける★
-    var GEMINI_API_KEY = "★ここに取得したGeminiのAPIキーを貼り付ける★";
+    var GEMINI_API_KEY = "AQ.Ab8RN6K0DdUp0lRTdqVHbXsorh_LOaxzFvs4i2oaJjuKp1p9hg";
 
     var me = null, targetEmail = null, chatUnsub = null;
     var myName = "", myAvatar = "";
@@ -134,20 +139,27 @@
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.type = 'sine';
             osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-            osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.1);
+            osc.frequency.setValueAtTime(880.00, applicationContext.currentTime + 0.1);
             gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
             osc.start(); osc.stop(audioCtx.currentTime + 0.4);
         } catch(e) {}
     }
 
+    // 古いSafariでも確実に重ならない画面切り替え関数
     function show(id) {
-        var views = document.querySelectorAll('.view');
-        for (var i = 0; i < views.length; i++) { views[i].style.style.display = 'none'; }
-        var targetView = document.getElementById(id);
-        if (targetView) {
-            targetView.style.display = 'block';
-            if (id === 'homeView' || id === 'chatView') { targetView.style.display = 'flex'; }
+        var views = ['loginView', 'homeView', 'chatView', 'settingsView'];
+        for (var i = 0; i < views.length; i++) {
+            var v = document.getElementById(views[i]);
+            if (v) { v.style.display = 'none'; }
+        }
+        var target = document.getElementById(id);
+        if (target) {
+            if (id === 'loginView') {
+                target.style.display = 'flex';
+            } else {
+                target.style.display = 'flex';
+            }
         }
     }
 
@@ -178,7 +190,7 @@
 
         if (isSignUpMode) {
             auth.createUserWithEmailAndPassword(emailStr, pwStr)
-                .then(function() { alert("アカウントを作成しました！"); })
+                .then(function() { alert("アカウントを作成しました！ログインしてください。"); })
                 .catch(function(e) { alert("登録失敗: " + e.message); });
         } else {
             auth.signInWithEmailAndPassword(emailStr, pwStr).catch(function() { alert("ログイン失敗"); });
@@ -247,7 +259,7 @@
             snap.forEach(function(d) {
                 var users = d.data().users;
                 var other = users[0] === me.email ? users[1] : users[0];
-                var safeId = other.replace(/[^a-zA-Z0-9]/g, ""); // iPhone5でバグるbtoaを廃止、安全な文字列IDに変換
+                var safeId = other.replace(/[^a-zA-Z0-9]/g, "");
                 
                 var item = document.createElement('div');
                 item.className = "contact-item";
