@@ -108,7 +108,6 @@
 </div>
 
 <script>
-    // iPad・iPhone上でのエラーを強制検知してポップアップする仕掛け
     window.onerror = function(msg, url, line) {
         alert("プログラムエラー発生:\n" + msg + "\n行番号: " + line);
         return false;
@@ -297,7 +296,7 @@
         show('chatView');
         
         var safeMyId = me.email.replace(/[^a-zA-Z0-9]/g, "");
-        var roomId = (email === "gemini-ai-bot") ? "room_with_" + safeMyId + "_gemini" : [me.email, targetEmail].sort().join("_");
+        var roomId = (email === "gemini-ai-bot") ? "room_with_" + safeMyId + "_gemini" : [me.email, targetEmail].sort().sort().join("_");
         
         if (email !== "gemini-ai-bot") {
             db.collection("room_status").doc(roomId).set({ unread: "" }, { merge: true });
@@ -351,7 +350,8 @@
             return;
         }
 
-        var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY;
+        // 🛠️ 修正ポイント: 最新の安定版URL (v1) と正しいモデル名表記に変更
+        var url = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY;
         var xhr = new XMLHttpRequest();
         xhr.open("POST", url, true);
         xhr.setRequestHeader("Content-Type", "application/json");
@@ -367,7 +367,6 @@
                         saveBotMessage("解析エラーが発生しました。内容: " + e.message, roomId);
                     }
                 } else {
-                    // iPad上で、サーバーから返ってきた生のエラーコードや文字をポップアップ通知させる
                     alert("Gemini通信失敗詳細:\nステータスコード: " + xhr.status + "\nレスポンス: " + xhr.responseText);
                     saveBotMessage("通信エラーが発生しました。", roomId);
                 }
