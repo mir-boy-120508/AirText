@@ -22,7 +22,7 @@
         .google-btn { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #ddd; background: white; color: #333; font-size: 16px; cursor: pointer; margin-bottom: 15px; font-weight: bold; }
         .switch-link { color: #007aff; cursor: pointer; text-decoration: underline; font-size: 14px; }
 
-        /* ホーム画面（AirText） */
+        /* ホーム画面 */
         #homeView { background: white; flex-direction: column; }
         .header { padding: 15px 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; height: 60px; box-sizing: border-box; }
         .contact-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; background: white; }
@@ -290,7 +290,6 @@
         });
     }
 
-    // 🛠️ ルームIDの生成ロジックを完全に統一
     function getRoomId(target) {
         var safeMyId = me.email.replace(/[^a-zA-Z0-9]/g, "");
         if (target === "gemini-ai-bot") {
@@ -358,7 +357,8 @@
             return;
         }
 
-        var url = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY;
+        // 🛠️ 修正ポイント: Gemini 3 (Flash) キーが要求する最新のモデル名（gemini-2.5-flash）に変更
+        var url = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=" + GEMINI_API_KEY;
         var xhr = new XMLHttpRequest();
         xhr.open("POST", url, true);
         xhr.setRequestHeader("Content-Type", "application/json");
