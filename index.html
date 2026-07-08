@@ -36,7 +36,9 @@
         #chatView { background: white; flex-direction: column; }
         .chat-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; height: 60px; box-sizing: border-box; }
         .message-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; background: #fff; }
-        .msg { max-width: 75%; padding: 12px 16px; border-radius: 20px; margin-bottom: 8px; font-size: 16px; line-height: 1.4; word-wrap: break-word; }
+        
+        /* 改行や段落をきれいに維持するための設定 */
+        .msg { max-width: 75%; padding: 12px 16px; border-radius: 20px; margin-bottom: 8px; font-size: 16px; line-height: 1.5; word-wrap: break-word; white-space: pre-wrap; }
         .sent { background: #007aff; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
         .received { background: #e5e5ea; color: black; align-self: flex-start; border-bottom-left-radius: 4px; }
         
@@ -133,7 +135,7 @@
     var myName = "", myAvatar = "";
     var isSignUpMode = false;
     var audioCtx = null;
-    var currentChatMessages = []; // 会話履歴を一時保管する配列
+    var currentChatMessages = [];
 
     function playNotificationSound() {
         try {
@@ -315,11 +317,11 @@
         chatUnsub = db.collection("rooms").doc(roomId).collection("messages").orderBy("time", "asc").onSnapshot(function(snap) {
             var area = document.getElementById('msgArea');
             area.innerHTML = "";
-            currentChatMessages = []; // 配列をリセット
+            currentChatMessages = [];
             
             snap.forEach(function(d) {
                 var data = d.data();
-                currentChatMessages.push(data); // 履歴をストック
+                currentChatMessages.push(data);
                 
                 var m = document.createElement('div');
                 m.className = "msg " + (data.sender === me.email ? 'sent' : 'received');
@@ -384,10 +386,7 @@
             }
         };
 
-        // 🛠️ 修正ポイント: 過去のチャット履歴をGeminiが理解できるフォーマットに変換
         var contentsArray = [];
-        
-        // 直近15件程度の会話に絞って履歴を作成（多すぎるとエラーになるのを防ぐため）
         var startIdx = Math.max(0, currentChatMessages.length - 15);
         for (var i = startIdx; i < currentChatMessages.length; i++) {
             var msg = currentChatMessages[i];
@@ -398,15 +397,19 @@
             });
         }
 
-        // 基本の口調のシステム指示を先頭に注入
-　　　　　var systemInstruction = "【システム指示】あなたは丁寧で親切なGoogleのAIアシスタント「Gemini」です。これまでの会話の流れをしっかり踏まえ、文脈に沿って、単に質問に答えるだけでなく、関連する豆知識やあなたの意見も交えて、200文字程度の読み応えのある自然な日本語（敬語）で返答してください。最後はユーザーが会話を続けたくなるような自然な問いかけで終わらせてください。";
+        // 🛠️ 修正ポイント1: 長文で段落分けをしっかり行う指示に変更
+        var systemInstruction = "【システム指示】あなたは丁寧で優秀なGoogleのAIアシスタント「Gemini」です。これまでの会話の流れをしっかり踏まえ、最新の検索結果を活用しながら、詳しく分かりやすい日本語（敬語）で回答してください。文字数の制限はありません。重要な情報や複数のポイントがある場合は、適宜改行を入れ、見出しや段落をきれいに分けて読みやすく配置してください。";
         
         if (contentsArray.length > 0 && contentsArray[contentsArray.length - 1].role === "user") {
             contentsArray[contentsArray.length - 1].parts[0].text += " (" + systemInstruction + ")";
         }
 
+        // 🛠️ 修正ポイント2: Google検索機能（Google Search Grounding）を有効化
         var requestBody = JSON.stringify({
-            contents: contentsArray
+            contents: contentsArray,
+            tools: [{
+                googleSearch: {}
+            }]
         });
         xhr.send(requestBody);
     }
