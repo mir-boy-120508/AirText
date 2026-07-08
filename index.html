@@ -108,6 +108,12 @@
 </div>
 
 <script>
+    // iPad・iPhone上でのエラーを強制検知してポップアップする仕掛け
+    window.onerror = function(msg, url, line) {
+        alert("プログラムエラー発生:\n" + msg + "\n行番号: " + line);
+        return false;
+    };
+
     var firebaseConfig = {
         apiKey: "AIzaSyAFxMMoJ6q0pQqRimkJaY6eDyBWgLqaNWc",
         authDomain: "airtext-mirboy.firebaseapp.com",
@@ -135,7 +141,7 @@
             var osc = audioCtx.createOscillator();
             var gain = audioCtx.createGain();
             osc.connect(gain); 
-            gain.connect(audioCtx.destination); // 修正：applicationContextを完全に排除
+            gain.connect(audioCtx.destination);
             osc.type = 'sine';
             osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
             osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.1);
@@ -241,7 +247,6 @@
             var list = document.getElementById('contactList');
             list.innerHTML = "";
 
-            // 🤖 Gemini AI (友達) を追加
             var geminiItem = document.createElement('div');
             geminiItem.className = "contact-item";
             geminiItem.innerHTML = '<div class="avatar" style="background:#6840d4;">🤖</div><div style="font-weight:bold;">Gemini AI (友達)</div>';
@@ -359,9 +364,11 @@
                         var reply = res.candidates[0].content.parts[0].text;
                         saveBotMessage(reply, roomId);
                     } catch(e) {
-                        saveBotMessage("解析エラーが発生しました。", roomId);
+                        saveBotMessage("解析エラーが発生しました。内容: " + e.message, roomId);
                     }
                 } else {
+                    // iPad上で、サーバーから返ってきた生のエラーコードや文字をポップアップ通知させる
+                    alert("Gemini通信失敗詳細:\nステータスコード: " + xhr.status + "\nレスポンス: " + xhr.responseText);
                     saveBotMessage("通信エラーが発生しました。", roomId);
                 }
             }
