@@ -8,13 +8,14 @@
         html, body { height: 100%; margin: 0; font-family: -apple-system, sans-serif; background: #f2f2f7; overflow: hidden; }
         .view { display: none; height: 100vh; flex-direction: column; }
         
-        /* ログイン */
+        /* ログイン・新規登録 */
         #loginView { background: #000; color: white; display: flex; justify-content: center; align-items: center; }
-        .login-box { width: 320px; text-align: center; }
-        .login-box input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: none; background: #1c1c1e; color: white; font-size: 16px; -webkit-appearance: none; }
-        .login-box button { width: 100%; padding: 15px; border-radius: 12px; border: none; background: #007aff; color: white; font-size: 16px; cursor: pointer; }
+        .login-box { width: 320px; text-align: center; padding: 20px; }
+        .login-box input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: none; background: #1c1c1e; color: white; font-size: 16px; -webkit-appearance: none; box-sizing: border-box; }
+        .login-box button { width: 100%; padding: 15px; border-radius: 12px; border: none; background: #007aff; color: white; font-size: 16px; cursor: pointer; margin-bottom: 15px; }
+        .switch-link { color: #007aff; cursor: pointer; text-decoration: underline; font-size: 14px; }
 
-        /* ホーム・連絡先 */
+        /* ホーム・連絡先（AirText） */
         #homeView { background: white; display: flex; }
         .header { padding: 15px 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; }
         .contact-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -39,7 +40,7 @@
         /* 設定画面 */
         #settingsView { background: white; padding: 30px; align-items: center; }
         .setting-box { width: 100%; max-width: 350px; text-align: center; margin-top: 50px; }
-        .setting-box input[type="text"] { width: 100%; padding: 12px; margin: 20px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; }
+        .setting-box input[type="text"] { width: 100%; padding: 12px; margin: 20px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
         
         /* 通話中モーダル */
         #callModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); color: white; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
@@ -55,10 +56,11 @@
 
 <div class="view" id="loginView">
     <div class="login-box">
-        <h1 style="font-size: 40px; margin-bottom: 30px;">AirText</h1>
+        <h1 id="authTitle" style="font-size: 40px; margin-bottom: 30px;">AirText</h1>
         <input type="email" id="email" placeholder="メールアドレス">
         <input type="password" id="pw" placeholder="パスワード">
-        <button id="loginBtn">ログイン</button>
+        <button id="mainAuthBtn">ログイン</button>
+        <div id="switchAuthMode" class="switch-link">新しくアカウントを作る(Sign Up)</div>
     </div>
 </div>
 
@@ -66,8 +68,7 @@
     <div style="width:100%; display:flex; flex-direction:column;">
         <div class="header">
             <button class="icon-btn" id="toSettingsBtn">⚙️</button>
-            <h2 style="margin:0">連絡先</h2>
-            <div id="myEmail" style="font-size:12px; color:#888;"></div>
+            <h2 style="margin:0; font-size:24px;">AirText</h2> <div id="myEmail" style="font-size:12px; color:#888;"></div>
         </div>
         <div class="contact-list" id="contactList"></div>
     </div>
@@ -83,8 +84,7 @@
     <div class="message-area" id="msgArea"></div>
     <div class="input-bar">
         <label class="media-btn" for="mediaInput">📎</label>
-        <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;">
-        <input type="text" id="msgInput" placeholder="メッセージ">
+        <input type="file" id="mediaInput" style="display:none;"> <input type="text" id="msgInput" placeholder="メッセージ">
         <button class="send-btn" id="sendBtn" style="background:#007aff; color:white; border:none; width:40px; height:40px; border-radius:50%; margin-left:10px; font-size:20px;">↑</button>
     </div>
 </div>
@@ -128,6 +128,26 @@
 
     var me = null, targetEmail = null, chatUnsub = null, peer = null, currentCall = null;
     var myName = "", myAvatar = "";
+    var isSignUpMode = false;
+
+    // 通知音用のオーディオコンテキスト
+    var audioCtx = null;
+    function playNotificationSound() {
+        try {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            var osc = audioCtx.createOscillator();
+            var gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+            osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.1); // A5
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.4);
+        } catch(e) { console.log(e); }
+    }
 
     function show(id) {
         var views = document.querySelectorAll('.view');
@@ -135,9 +155,34 @@
         document.getElementById(id).style.display = 'flex';
     }
 
-    // ログイン
-    document.getElementById('loginBtn').onclick = function() {
-        auth.signInWithEmailAndPassword(document.getElementById('email').value.trim(), document.getElementById('pw').value.trim()).catch(function() { alert("ログイン失敗"); });
+    // ログイン・新規登録のモード切り替え
+    document.getElementById('switchAuthMode').onclick = function() {
+        isSignUpMode = !isSignUpMode;
+        if (isSignUpMode) {
+            document.getElementById('authTitle').innerText = "AirText (Sign Up)";
+            document.getElementById('mainAuthBtn').innerText = "新規アカウント登録";
+            document.getElementById('switchAuthMode').innerText = "登録済みの方はこちら (Login)";
+        } else {
+            document.getElementById('authTitle').innerText = "AirText";
+            document.getElementById('mainAuthBtn').innerText = "ログイン";
+            document.getElementById('switchAuthMode').innerText = "新しくアカウントを作る(Sign Up)";
+        }
+    };
+
+    // 認証ボタン押下
+    document.getElementById('mainAuthBtn').onclick = function() {
+        var emailStr = document.getElementById('email').value.trim();
+        var pwStr = document.getElementById('pw').value.trim();
+        if(!emailStr || !pwStr) return alert("入力してください");
+
+        if (isSignUpMode) {
+            auth.createUserWithEmailAndPassword(emailStr, pwStr)
+                .then(function() { alert("アカウントを作成しました！"); })
+                .catch(function(e) { alert("登録失敗: " + e.message); });
+        } else {
+            auth.signInWithEmailAndPassword(emailStr, pwStr)
+                .catch(function() { alert("ログイン失敗"); });
+        }
     };
 
     auth.onAuthStateChanged(function(user) {
@@ -154,7 +199,7 @@
                     document.getElementById('nicknameInput').value = myName;
                     if (myAvatar) document.getElementById('myAvatarPreview').src = myAvatar;
                 }
-                initPeer(); // 通話システムの準備
+                initPeer();
                 show('homeView');
                 listenContacts();
             });
@@ -163,20 +208,15 @@
         }
     });
 
-    // 設定画面の遷移
     document.getElementById('toSettingsBtn').onclick = function() { show('settingsView'); };
     document.getElementById('backFromSettings').onclick = function() { show('homeView'); };
 
-    // プロフィール画像選択(Base64変換)
     document.getElementById('avatarInput').onchange = function(e) {
         var reader = new FileReader();
-        reader.onload = function() {
-            document.getElementById('myAvatarPreview').src = reader.result;
-        };
+        reader.onload = function() { document.getElementById('myAvatarPreview').src = reader.result; };
         if (e.target.files[0]) reader.readAsDataURL(e.target.files[0]);
     };
 
-    // プロフィール保存
     document.getElementById('saveSettingsBtn').onclick = function() {
         var name = document.getElementById('nicknameInput').value.trim();
         var avatar = document.getElementById('myAvatarPreview').src;
@@ -186,7 +226,6 @@
         });
     };
 
-    // 連絡先追加
     document.getElementById('addBtn').onclick = function() {
         var mail = prompt("追加する相手のメールアドレスを入力:");
         if (!mail || mail === me.email) return;
@@ -195,6 +234,7 @@
     };
 
     // 連絡先一覧監視
+    var firstLoad = true;
     function listenContacts() {
         db.collection("contact_links").where("users", "array-contains", me.email).onSnapshot(function(snap) {
             var list = document.getElementById('contactList');
@@ -202,35 +242,43 @@
             snap.forEach(function(d) {
                 var users = d.data().users;
                 var other = users[0] === me.email ? users[1] : users[0];
+                var safeId = btoa(other).replace(/=/g,'');
                 
                 var item = document.createElement('div');
                 item.className = "contact-item";
-                item.innerHTML = '<div class="avatar" id="av-'+btoa(other).replace(/=/g,'')+'">'+other[0].toUpperCase() + '</div><div style="font-weight:bold;" id="name-'+btoa(other).replace(/=/g,'')+'">' + other + '</div>';
+                item.innerHTML = '<div class="avatar" id="av-'+safeId+'">'+other[0].toUpperCase() + '</div><div style="font-weight:bold;" id="name-'+safeId+'">' + other + '</div>';
                 
-                // 相手のプロフィール（名前と画像）を適用
                 db.collection("profiles").doc(other).onSnapshot(function(pSnap) {
                     var pData = pSnap.data();
                     if (pData) {
-                        var avEl = document.getElementById('av-'+btoa(other).replace(/=/g,''));
-                        var nmEl = document.getElementById('name-'+btoa(other).replace(/=/g,''));
-                        if (pData.avatar && avEl) { avEl.innerHTML = ""; var img = document.createElement('img'); img.src = pData.avatar; img.className="avatar"; img.style.margin="0"; targetItem=item; avEl.appendChild(img); }
+                        var avEl = document.getElementById('av-'+safeId);
+                        var nmEl = document.getElementById('name-'+safeId);
+                        if (pData.avatar && avEl) { avEl.innerHTML = ""; var img = document.createElement('img'); img.src = pData.avatar; img.className="avatar"; img.style.margin="0"; avEl.appendChild(img); }
                         if (pData.name && nmEl) { nmEl.innerText = pData.name; }
                     }
                 });
 
-                // 未読バッジ
+                // 未読バッジ & 通知音
                 var roomId = [me.email, other].sort().join("_");
                 db.collection("room_status").doc(roomId).onSnapshot(function(docSnap) {
                     var status = docSnap.data();
                     var b = item.querySelector('.badge');
                     if (status && status.unread && status.unread === me.email) {
-                        if (!b) { b = document.createElement('div'); b.className = "badge"; b.innerText = "新着"; item.appendChild(b); }
+                        if (!b) {
+                            b = document.createElement('div');
+                            b.className = "badge";
+                            b.innerText = "新着";
+                            item.appendChild(b);
+                            // 起動直後の大量通知鳴り響きを防止
+                            if (!firstLoad) { playNotificationSound(); }
+                        }
                     } else { if (b) b.remove(); }
                 });
 
                 item.onclick = function() { openChat(other); };
                 list.appendChild(item);
             });
+            firstLoad = false;
         });
     }
 
@@ -253,9 +301,9 @@
                 m.className = "msg " + (data.sender === me.email ? 'sent' : 'received');
                 
                 if (data.type === "image") {
-                    m.innerHTML = '<div>' + data.text + '</div><img src="'+data.file+'">';
+                    m.innerHTML = (data.text ? '<div>' + data.text + '</div>' : '') + '<img src="'+data.file+'">';
                 } else if (data.type === "video") {
-                    m.innerHTML = '<div>' + data.text + '</div><video src="'+data.file+'" controls>';
+                    m.innerHTML = (data.text ? '<div>' + data.text + '</div>' : '') + '<video src="'+data.file+'" controls>';
                 } else {
                     m.innerText = data.text;
                 }
@@ -265,7 +313,6 @@
         });
     }
 
-    // 送信処理（iPhone 5完全対応版）
     function send(type, fileData) {
         var input = document.getElementById('msgInput');
         var text = input.value.trim();
@@ -275,13 +322,14 @@
         var msgData = {
             text: text,
             sender: me.email,
-            time: Date.now(), // iPhone5対策：ServerTimestampを使わず数値で保存
+            time: Date.now(),
             type: type || "text"
         };
         if (fileData) msgData.file = fileData;
 
-        db.collection("rooms").doc(roomId).collection("messages").add(msgData);
-        db.collection("room_status").doc(roomId).set({ unread: targetEmail }, { merge: true });
+        db.collection("rooms").doc(roomId).collection("messages").add(msgData).then(function(){
+            db.collection("room_status").doc(roomId).set({ unread: targetEmail }, { merge: true });
+        });
         input.value = "";
     }
 
@@ -289,30 +337,44 @@
     document.getElementById('msgInput').onkeypress = function(e) { if (e.key === 'Enter') send("text"); };
     document.getElementById('backBtn').onclick = function() { show('homeView'); };
 
-    // メディア送信（画像・動画）
+    // 画像・動画の送信バグ修正（iPhone 5の古いFileReader互換処理）
     document.getElementById('mediaInput').onchange = function(e) {
         var file = e.target.files[0];
         if (!file) return;
-        var type = file.type.startsWith("image") ? "image" : "video";
+        
+        // ファイルタイプの判定
+        var type = "image";
+        if (file.type && file.type.indexOf("video") !== -1) { type = "video"; }
+        else if (file.name && (file.name.indexOf(".mp4") !== -1 || file.name.indexOf(".MOV") !== -1)) { type = "video"; }
+
         var reader = new FileReader();
         reader.onload = function() {
             send(type, reader.result);
+            document.getElementById('mediaInput').value = ""; // 連続送信できるようにリセット
         };
         reader.readAsDataURL(file);
     };
 
-    // 📞 通話機能 (PeerJS連携)
+    // 📞 通話機能 (iPhone 5 / iOS 10の旧式互換 WebGetUserMedia)
     function initPeer() {
-        var peerId = btoa(me.email).replace(/=/g, ''); // メールアドレスを安全なIDに変換
+        var peerId = btoa(me.email).replace(/=/g, '');
         peer = new Peer(peerId);
         
-        // 着信時の処理
         peer.on('call', function(call) {
             if (confirm("着信中: 通話に出ますか？")) {
-                navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream) {
-                    call.answer(stream);
-                    handleCall(call);
-                });
+                // 古いiOS対応のためのクロスブラウザ処理
+                var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+                if (!getUserMedia && navigator.mediaDevices) {
+                    navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream) {
+                        call.answer(stream);
+                        handleCall(call);
+                    });
+                } else if (getUserMedia) {
+                    getUserMedia.call(navigator, { audio: true, video: false }, function(stream) {
+                        call.answer(stream);
+                        handleCall(call);
+                    }, function(err) { alert("マイクが起動できません"); });
+                }
             } else {
                 call.close();
             }
@@ -332,20 +394,27 @@
         call.on('close', function() { endCall(); });
     }
 
-    // 発信ボタン
     document.getElementById('callBtn').onclick = function() {
         var targetPeerId = btoa(targetEmail).replace(/=/g, '');
         document.getElementById('callStatus').innerText = "呼び出し中...";
         document.getElementById('callTargetName').innerText = targetEmail;
         document.getElementById('callModal').style.display = 'flex';
         
-        navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream) {
-            var call = peer.call(targetPeerId, stream);
-            handleCall(call);
-        }).catch(function(err) {
-            alert("マイクの許可が必要です");
+        var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+        if (!getUserMedia && navigator.mediaDevices) {
+            navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream) {
+                var call = peer.call(targetPeerId, stream);
+                handleCall(call);
+            }).catch(function(err) { alert("マイクの許可が必要です"); endCall(); });
+        } else if (getUserMedia) {
+            getUserMedia.call(navigator, { audio: true, video: false }, function(stream) {
+                var call = peer.call(targetPeerId, stream);
+                handleCall(call);
+            }, function(err) { alert("マイクの許可が必要です"); endCall(); });
+        } else {
+            alert("この端末は通話に対応していません");
             endCall();
-        });
+        }
     };
 
     function endCall() {
