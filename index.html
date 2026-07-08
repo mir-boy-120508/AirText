@@ -127,7 +127,7 @@
     var auth = firebase.auth();
 
     // ★ここに取得したGeminiのAPIキーを貼り付ける★
-    var GEMINI_API_KEY = "AQ.Ab8RN6K0DdUp0lRTdqVHbXsorh_LOaxzFvs4i2oaJjuKp1p9hg";
+    var GEMINI_API_KEY = "★ここに取得したGeminiのAPIキーを貼り付ける★";
 
     var me = null, targetEmail = null, chatUnsub = null;
     var myName = "", myAvatar = "";
@@ -290,13 +290,22 @@
         });
     }
 
+    // 🛠️ ルームIDの生成ロジックを完全に統一
+    function getRoomId(target) {
+        var safeMyId = me.email.replace(/[^a-zA-Z0-9]/g, "");
+        if (target === "gemini-ai-bot") {
+            return "room_with_" + safeMyId + "_gemini";
+        } else {
+            return [me.email, target].sort().join("_");
+        }
+    }
+
     function openChat(email) {
         targetEmail = email;
         document.getElementById('chatTitle').innerText = (email === "gemini-ai-bot") ? "Gemini AI" : targetEmail;
         show('chatView');
         
-        var safeMyId = me.email.replace(/[^a-zA-Z0-9]/g, "");
-        var roomId = (email === "gemini-ai-bot") ? "room_with_" + safeMyId + "_gemini" : [me.email, targetEmail].sort().sort().join("_");
+        var roomId = getRoomId(targetEmail);
         
         if (email !== "gemini-ai-bot") {
             db.collection("room_status").doc(roomId).set({ unread: "" }, { merge: true });
@@ -323,8 +332,7 @@
         if (!text || !targetEmail) return;
 
         var isGemini = (targetEmail === "gemini-ai-bot");
-        var safeMyId = me.email.replace(/[^a-zA-Z0-9]/g, "");
-        var roomId = isGemini ? "room_with_" + safeMyId + "_gemini" : [me.email, targetEmail].sort().join("_");
+        var roomId = getRoomId(targetEmail);
         
         var msgData = {
             text: text,
@@ -350,7 +358,6 @@
             return;
         }
 
-        // 🛠️ 修正ポイント: 最新の安定版URL (v1) と正しいモデル名表記に変更
         var url = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY;
         var xhr = new XMLHttpRequest();
         xhr.open("POST", url, true);
