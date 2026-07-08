@@ -12,7 +12,7 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #fff;
         }
-        /* ログイン画面のスタイル */
+        /* ログイン画面 */
         .login-container {
             display: flex;
             flex-direction: column;
@@ -49,12 +49,30 @@
             font-size: 16px;
         }
 
-        /* チャット画面のスタイル（普段は隠しておく） */
+        /* チャット画面全体 */
         .app-container {
-            display: none; /* ログイン後に flex に切り替える */
+            display: none;
             flex-direction: column;
             height: 100vh;
         }
+        
+        /* 宛先選択ヘッダー */
+        .room-header {
+            background: #f5f5f7;
+            padding: 10px;
+            border-bottom: 1px solid #e5e5ea;
+            text-align: center;
+        }
+        .room-header select {
+            padding: 8px 16px;
+            font-size: 16px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            outline: none;
+            background: white;
+        }
+
+        /* メッセージエリア */
         .chat-container {
             flex: 1;
             max-width: 600px;
@@ -123,7 +141,17 @@
 </div>
 
 <div class="app-container" id="appContainer">
+    <div class="room-header">
+        <label for="roomSelect">あて先: </label>
+        <select id="roomSelect">
+            <option value="room1">トークルーム 1</option>
+            <option value="room2">トークルーム 2</option>
+            <option value="room3">トークルーム 3</option>
+        </select>
+    </div>
+
     <div class="chat-container" id="chatContainer"></div>
+    
     <div class="input-area">
         <input type="text" id="messageInput" placeholder="AirText">
         <button id="sendButton">↑</button>
@@ -132,7 +160,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, orderBy, where, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -149,41 +177,41 @@
     const auth = getAuth(app);
 
     let currentUserId = null;
+    let unsubscribe = null; // リアルタイム監視を解除するための変数
 
-    // 画面要素の取得
     const loginContainer = document.getElementById('loginContainer');
     const appContainer = document.getElementById('appContainer');
     const chatContainer = document.getElementById('chatContainer');
     const messageInput = document.getElementById('messageInput');
     const sendButton = document.getElementById('sendButton');
+    const roomSelect = document.getElementById('roomSelect');
     
     const emailInput = document.getElementById('emailInput');
     const passwordInput = document.getElementById('passwordInput');
     const loginButton = document.getElementById('loginButton');
 
-    // ログインボタンの処理
+    // ログイン処理
     loginButton.addEventListener('click', () => {
-        const email = emailInput.value.trim();
-        const password = passwordInput.value.trim();
-        
-        signInWithEmailAndPassword(auth, email, password)
-            .catch((error) => {
-                alert("ログインに失敗しました。アドレスかパスワードが違います。");
-                console.error(error);
-            });
+        signInWithEmailAndPassword(auth, emailInput.value.trim(), passwordInput.value.trim())
+            .catch((error) => alert("ログインに失敗しました。"));
     });
 
-    // ログイン状態を監視
+    // ログイン状態監視
     onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUserId = user.uid;
-            loginContainer.style.display = 'none'; // ログイン画面を隠す
-            appContainer.style.display = 'flex';  // チャット画面を出す
-            startChatListening();
+            loginContainer.style.display = 'none';
+            appContainer.style.display = 'flex';
+            startChatListening(roomSelect.value); // 初期部屋のチャット開始
         } else {
             loginContainer.style.display = 'flex';
             appContainer.style.display = 'none';
         }
+    });
+
+    // トークルームが切り替わったら読み直す
+    roomSelect.addEventListener('change', () => {
+        startChatListening(roomSelect.value);
     });
 
     // メッセージ送信
@@ -195,39 +223,46 @@
             await addDoc(collection(db, "messages"), {
                 text: text,
                 senderId: currentUserId,
+                roomId: roomSelect.value, // どの部屋宛てか保存
                 createdAt: serverTimestamp()
             });
             messageInput.value = '';
         } catch (error) {
-            console.error("送信エラー: ", error);
+            console.error(error);
         }
     }
 
     sendButton.addEventListener('click', sendMessage);
-    messageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
-    });
+    messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 
-    // チャット受信
-    function startChatListening() {
-        const q = query(collection(db, "messages"), orderBy("createdAt", "asc"));
-        onSnapshot(q, (snapshot) => {
+    // チャット受信（Safari遅延対策を適用）
+    function startChatListening(roomId) {
+        // すでに前の部屋の監視が動いていたら一回止める（Safariの重複・切断対策）
+        if (unsubscribe) unsubscribe();
+
+        // 指定された roomId のメッセージだけを絞り込んで取得する設定
+        const q = query(
+            collection(db, "messages"), 
+            where("roomId", "==", roomId), 
+            orderBy("createdAt", "asc")
+        );
+
+        unsubscribe = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
             chatContainer.innerHTML = '';
             snapshot.forEach((doc) => {
                 const data = doc.data();
+                if (!data.createdAt) return; // サーバー時間確定まで一時スキップ（遅延防止）
+
                 const messageElement = document.createElement('div');
                 messageElement.classList.add('message');
-
-                if (data.senderId === currentUserId) {
-                    messageElement.classList.add('sent');
-                } else {
-                    messageElement.classList.add('received');
-                }
-
+                messageElement.classList.add(data.senderId === currentUserId ? 'sent' : 'received');
                 messageElement.innerText = data.text;
                 chatContainer.appendChild(messageElement);
             });
             chatContainer.scrollTop = chatContainer.scrollHeight;
+        }, (error) => {
+            console.error("受信エラー、再接続します: ", error);
+            setTimeout(() => startChatListening(roomId), 2000); // エラー時自動再接続
         });
     }
 </script>
