@@ -3,76 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AirText - Pro</title>
+    <title>AirText v2.1 (Legacy-Fit)</title>
     <style>
-        html, body { height: 100%; margin: 0; font-family: -apple-system, sans-serif; background: #f2f2f7; }
-        .login-container, .home-container, .chat-container-view { display: none; height: 100vh; flex-direction: column; }
+        html, body { height: 100%; margin: 0; font-family: -apple-system, sans-serif; background: #f2f2f7; overflow: hidden; }
+        .view { display: none; height: 100vh; flex-direction: column; }
         
-        /* ログイン */
-        .login-box { margin: auto; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 320px; }
-        .login-box input { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
-        .login-box button { width: 100%; padding: 12px; background: #007aff; color: white; border: none; border-radius: 10px; font-size: 16px; cursor: pointer; }
+        /* ログイン画面 */
+        #loginView { background: #000; color: white; display: flex; justify-content: center; align-items: center; }
+        .login-box { width: 320px; text-align: center; }
+        .login-box input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: none; background: #1c1c1e; color: white; font-size: 16px; -webkit-appearance: none; }
+        .login-box button { width: 100%; padding: 15px; border-radius: 12px; border: none; background: #007aff; color: white; font-size: 16px; cursor: pointer; }
 
-        /* ホーム画面（連絡先一覧） */
-        .header { background: white; padding: 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
-        .contact-list { flex: 1; overflow-y: auto; background: white; }
-        .contact-item { padding: 20px; border-bottom: 1px solid #eee; display: flex; align-items: center; cursor: pointer; }
+        /* ホーム画面 */
+        #homeView { background: white; display: flex; }
+        .header { padding: 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+        .contact-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .contact-item { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; align-items: center; cursor: pointer; position: relative; }
         .contact-item:active { background: #f2f2f7; }
-        .avatar { width: 45px; height: 45px; background: #007aff; border-radius: 50%; margin-right: 15px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
+        .avatar { width: 50px; height: 50px; background: #007aff; border-radius: 50%; margin-right: 15px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 20px; }
+        .badge { position: absolute; right: 25px; background: #ff3b30; color: white; padding: 4px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; }
 
         /* プラスボタン */
-        .add-btn { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #007aff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; }
+        .add-btn { position: fixed; bottom: 30px; right: 30px; width: 65px; height: 65px; background: #007aff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 35px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); cursor: pointer; z-index: 999; }
 
         /* チャット画面 */
-        .chat-header { background: #f9f9f9; padding: 15px; border-bottom: 1px solid #ddd; display: flex; align-items: center; }
-        .back-btn { margin-right: 15px; color: #007aff; cursor: pointer; font-size: 18px; }
-        .message-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; background: white; }
-        .msg { max-width: 70%; padding: 10px 15px; border-radius: 18px; margin-bottom: 8px; font-size: 16px; }
+        #chatView { background: white; }
+        .chat-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; align-items: center; background: #f9f9f9; }
+        .back-btn { margin-right: 15px; color: #007aff; cursor: pointer; font-size: 18px; font-weight: bold; }
+        .message-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; }
+        .msg { max-width: 75%; padding: 12px 16px; border-radius: 20px; margin-bottom: 8px; font-size: 16px; line-height: 1.4; word-wrap: break-word; }
         .sent { background: #007aff; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
         .received { background: #e5e5ea; color: black; align-self: flex-start; border-bottom-left-radius: 4px; }
-        .input-bar { padding: 10px 20px; display: flex; background: white; border-top: 1px solid #ddd; }
-        .input-bar input { flex: 1; padding: 10px 15px; border: 1px solid #ddd; border-radius: 20px; outline: none; }
-        .input-bar button { background: #007aff; color: white; border: none; width: 35px; height: 35px; border-radius: 50%; margin-left: 10px; cursor: pointer; }
+        .input-bar { padding: 10px 20px; display: flex; background: white; border-top: 1px solid #ddd; align-items: center; }
+        .input-bar input { flex: 1; padding: 12px 18px; border: 1px solid #ddd; border-radius: 25px; outline: none; font-size: 16px; -webkit-appearance: none; }
+        .send-btn { background: #007aff; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; margin-left: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 20px; }
     </style>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body>
 
-<div class="login-container" id="loginView">
+<div class="view" id="loginView">
     <div class="login-box">
-        <h2>AirText</h2>
+        <h1 style="font-size: 40px; margin-bottom: 30px;">AirText</h1>
         <input type="email" id="email" placeholder="メールアドレス">
         <input type="password" id="pw" placeholder="パスワード">
         <button id="loginBtn">ログイン</button>
     </div>
 </div>
 
-<div class="home-container" id="homeView">
-    <div class="header">
-        <h2 style="margin:0">連絡先</h2>
-        <span id="myEmail" style="font-size:12px; color:#666"></span>
+<div class="view" id="homeView">
+    <div style="width:100%; display:flex; flex-direction:column;">
+        <div class="header">
+            <h2 style="margin:0">連絡先</h2>
+            <div id="myEmail" style="font-size:12px; color:#888;"></div>
+        </div>
+        <div class="contact-list" id="contactList"></div>
     </div>
-    <div class="contact-list" id="contactList"></div>
-    <div class="add-btn" id="addContactBtn">+</div>
+    <div class="add-btn" id="addBtn">+</div>
 </div>
 
-<div class="chat-container-view" id="chatView">
+<div class="view" id="chatView">
     <div class="chat-header">
-        <div class="back-btn" id="backBtn">＜ 戻る</div>
-        <div id="chatWith" style="font-weight:bold"></div>
+        <div class="back-btn" id="backBtn">＜</div>
+        <div id="chatTitle" style="font-weight:bold; font-size:18px;"></div>
     </div>
     <div class="message-area" id="msgArea"></div>
     <div class="input-bar">
-        <input type="text" id="msgIn" placeholder="メッセージ">
-        <button id="sendBtn">↑</button>
+        <input type="text" id="msgInput" placeholder="メッセージ">
+        <button class="send-btn" id="sendBtn">↑</button>
     </div>
 </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, orderBy, where, onSnapshot, serverTimestamp, setDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-    const firebaseConfig = {
+<script>
+    // あなたのFirebase設定（古いバージョンに対応した形式）
+    var firebaseConfig = {
         apiKey: "AIzaSyAFxMMoJ6q0pQqRimkJaY6eDyBWgLqaNWc",
         authDomain: "airtext-mirboy.firebaseapp.com",
         projectId: "airtext-mirboy",
@@ -81,97 +88,143 @@
         appId: "1:1091018853143:web:c1ed8f39e4886656800552"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+    // 初期化
+    firebase.initializeApp(firebaseConfig);
+    var db = firebase.firestore();
+    var auth = firebase.auth();
 
-    let me = null;
-    let target = null;
-    let chatUnsubscribe = null;
+    var me = null;
+    var targetEmail = null;
+    var chatUnsub = null;
 
-    // ビュー切り替え
-    function showView(id) {
-        document.querySelectorAll('body > div').forEach(div => div.style.display = 'none');
+    function show(id) {
+        var views = document.querySelectorAll('.view');
+        for (var i = 0; i < views.length; i++) { views[i].style.display = 'none'; }
         document.getElementById(id).style.display = 'flex';
     }
 
     // ログイン
-    document.getElementById('loginBtn').onclick = () => {
-        signInWithEmailAndPassword(auth, email.value, pw.value).catch(() => alert("ログイン失敗"));
+    document.getElementById('loginBtn').onclick = function() {
+        auth.signInWithEmailAndPassword(document.getElementById('email').value.trim(), document.getElementById('pw').value.trim())
+            .catch(function() { alert("ログイン失敗"); });
     };
 
-    onAuthStateChanged(auth, user => {
+    auth.onAuthStateChanged(function(user) {
         if (user) {
             me = user;
             document.getElementById('myEmail').innerText = me.email;
-            showView('homeView');
-            loadContacts();
+            show('homeView');
+            listenContacts();
         } else {
-            showView('loginView');
+            show('loginView');
         }
     });
 
     // 連絡先追加
-    document.getElementById('addContactBtn').onclick = async () => {
-        const mail = prompt("追加する相手のメールアドレスを入力:");
-        if (mail && mail !== me.email) {
-            await setDoc(doc(db, "users", me.uid, "contacts", mail), { email: mail });
-            alert("追加しました");
-        }
+    document.getElementById('addBtn').onclick = function() {
+        var mail = prompt("追加する相手のメールアドレスを入力してください:");
+        if (!mail || mail === me.email) return;
+        
+        var linkId = [me.email, mail].sort().join("_");
+        db.collection("contact_links").doc(linkId).set({
+            users: [me.email, mail],
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(function() {
+            alert("追加しました！");
+        });
     };
 
-    // 連絡先読み込み
-    function loadContacts() {
-        onSnapshot(collection(db, "users", me.uid, "contacts"), snap => {
-            const list = document.getElementById('contactList');
-            list.innerHTML = "";
-            snap.forEach(d => {
-                const mail = d.data().email;
-                const div = document.createElement('div');
-                div.className = "contact-item";
-                div.innerHTML = `<div class="avatar">${mail[0].toUpperCase()}</div><div>${mail}</div>`;
-                div.onclick = () => openChat(mail);
-                list.appendChild(div);
+    // 連絡先監視
+    function listenContacts() {
+        db.collection("contact_links").where("users", "array-contains", me.email)
+            .onSnapshot(function(snap) {
+                var list = document.getElementById('contactList');
+                list.innerHTML = "";
+                snap.forEach(function(d) {
+                    var users = d.data().users;
+                    var other = users[0] === me.email ? users[1] : users[0];
+                    
+                    var item = document.createElement('div');
+                    item.className = "contact-item";
+                    item.innerHTML = '<div class="avatar">' + other[0].toUpperCase() + '</div><div>' + other + '</div>';
+                    
+                    // 未読監視用のクロージャ
+                    (function(targetItem, otherUser) {
+                        var roomId = [me.email, otherUser].sort().join("_");
+                        db.collection("room_status").doc(roomId).onSnapshot(function(docSnap) {
+                            var status = docSnap.data();
+                            var b = targetItem.querySelector('.badge');
+                            if (status && status.unreadBy && status.unreadBy.indexOf(me.email) !== -1) {
+                                if (!b) {
+                                    b = document.createElement('div');
+                                    b.className = "badge";
+                                    b.innerText = "新着";
+                                    targetItem.appendChild(b);
+                                }
+                            } else {
+                                if (b) b.remove();
+                            }
+                        });
+                    })(item, other);
+
+                    item.onclick = function() { openChat(other); };
+                    list.appendChild(item);
+                });
             });
-        });
     }
 
-    // チャット開始
+    // チャット画面
     function openChat(email) {
-        target = email;
-        document.getElementById('chatWith').innerText = target;
-        showView('chatView');
-        const roomId = [me.email, target].sort().join("_");
+        targetEmail = email;
+        document.getElementById('chatTitle').innerText = targetEmail;
+        show('chatView');
         
-        if (chatUnsubscribe) chatUnsubscribe();
-        const q = query(collection(db, "rooms", roomId, "messages"), orderBy("createdAt", "asc"));
-        chatUnsubscribe = onSnapshot(q, snap => {
-            const area = document.getElementById('msgArea');
-            area.innerHTML = "";
-            snap.forEach(d => {
-                const data = d.data();
-                const m = document.createElement('div');
-                m.className = `msg ${data.sender === me.email ? 'sent' : 'received'}`;
-                m.innerText = data.text;
-                area.appendChild(m);
+        var roomId = [me.email, targetEmail].sort().join("_");
+        
+        // 既読
+        db.collection("room_status").doc(roomId).set({
+            unreadBy: firebase.firestore.FieldValue.arrayRemove(me.email)
+        }, { merge: true });
+
+        if (chatUnsub) chatUnsub();
+        chatUnsub = db.collection("rooms").doc(roomId).collection("messages").orderBy("createdAt", "asc")
+            .onSnapshot(function(snap) {
+                var area = document.getElementById('msgArea');
+                area.innerHTML = "";
+                snap.forEach(function(d) {
+                    var data = d.data();
+                    var m = document.createElement('div');
+                    m.className = "msg " + (data.sender === me.email ? 'sent' : 'received');
+                    m.innerText = data.text;
+                    area.appendChild(m);
+                });
+                area.scrollTop = area.scrollHeight;
             });
-            area.scrollTop = area.scrollHeight;
-        });
     }
 
     // 送信
-    async function send() {
-        const text = msgIn.value.trim();
-        if (!text || !target) return;
-        const roomId = [me.email, target].sort().join("_");
-        await addDoc(collection(db, "rooms", roomId, "messages"), {
-            text: text, sender: me.email, createdAt: serverTimestamp()
+    function send() {
+        var input = document.getElementById('msgInput');
+        var text = input.value.trim();
+        if (!text || !targetEmail) return;
+        var roomId = [me.email, targetEmail].sort().join("_");
+        
+        db.collection("rooms").doc(roomId).collection("messages").add({
+            text: text,
+            sender: me.email,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        msgIn.value = "";
+        
+        db.collection("room_status").doc(roomId).set({
+            unreadBy: firebase.firestore.FieldValue.arrayUnion(targetEmail)
+        }, { merge: true });
+        
+        input.value = "";
     }
+
     document.getElementById('sendBtn').onclick = send;
-    document.getElementById('msgIn').onkeypress = e => e.key === 'Enter' && send();
-    document.getElementById('backBtn').onclick = () => showView('homeView');
+    document.getElementById('msgInput').onkeypress = function(e) { if (e.key === 'Enter') send(); };
+    document.getElementById('backBtn').onclick = function() { show('homeView'); };
 </script>
 </body>
 </html>
