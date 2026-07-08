@@ -122,7 +122,7 @@
     var auth = firebase.auth();
 
     // ★ここに取得したGeminiのAPIキーを貼り付ける★
-    var GEMINI_API_KEY = "AQ.Ab8RN6K0DdUp0lRTdqVHbXsorh_LOaxzFvs4i2oaJjuKp1p9hg";
+    var GEMINI_API_KEY = "★ここに取得したGeminiのAPIキーを貼り付ける★";
 
     var me = null, targetEmail = null, chatUnsub = null;
     var myName = "", myAvatar = "";
@@ -134,10 +134,10 @@
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             var osc = audioCtx.createOscillator();
             var gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.connect(gain); 
+            gain.connect(audioCtx.destination); // 修正：applicationContextを完全に排除
             osc.type = 'sine';
             osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-            // タイポを修正：applicationContext から audioCtx へ
             osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.1);
             gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
