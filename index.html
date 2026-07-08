@@ -248,7 +248,7 @@
 
             var geminiItem = document.createElement('div');
             geminiItem.className = "contact-item";
-            geminiItem.innerHTML = '<div class="avatar" style="background:#6840d4;">🤖</div><div style="font-weight:bold;">Gemini AI (友達)</div>';
+            geminiItem.innerHTML = '<div class="avatar" style="background:#6840d4;">🤖</div><div style="font-weight:bold;">Gemini AI</div>';
             geminiItem.onclick = function() { openChat("gemini-ai-bot"); };
             list.appendChild(geminiItem);
 
@@ -357,7 +357,6 @@
             return;
         }
 
-        // 🛠️ 修正ポイント: Gemini 3 (Flash) キーが要求する最新のモデル名（gemini-2.5-flash）に変更
         var url = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=" + GEMINI_API_KEY;
         var xhr = new XMLHttpRequest();
         xhr.open("POST", url, true);
@@ -380,8 +379,9 @@
             }
         };
 
+        // 🛠️ 修正ポイント: 「いつものGemini」のトーン（丁寧かつ親切なAIアシスタント）になるようプロンプトを調整
         var requestBody = JSON.stringify({
-            contents: [{ parts: [{ text: userText + " (条件: 親しみやすい友達として、絶対に2文以内の短い日本語で気さくに返答してください。)" }] }]
+            contents: [{ parts: [{ text: userText + " (条件: 丁寧で親切なGoogleのAIアシスタント「Gemini」として、簡潔で分かりやすい日本語で2文以内で返答してください。基本は敬語で、スマートな雰囲気にしてください。)" }] }]
         });
         xhr.send(requestBody);
     }
