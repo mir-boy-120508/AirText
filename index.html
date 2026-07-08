@@ -70,6 +70,7 @@
             border: 1px solid #ccc;
             outline: none;
             background: white;
+            max-width: 80%;
         }
 
         /* メッセージエリア */
@@ -142,12 +143,9 @@
 
 <div class="app-container" id="appContainer">
     <div class="room-header">
-        <label for="roomSelect">あて先: </label>
-        <select id="roomSelect">
-            <option value="room1">トークルーム 1</option>
-            <option value="room2">トークルーム 2</option>
-            <option value="room3">トークルーム 3</option>
-        </select>
+        <label for="userSelect">あて先: </label>
+        <select id="userSelect">
+            </select>
     </div>
 
     <div class="chat-container" id="chatContainer"></div>
@@ -160,7 +158,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, orderBy, where, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, orderBy, where, onSnapshot, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -177,14 +175,15 @@
     const auth = getAuth(app);
 
     let currentUserId = null;
-    let unsubscribe = null; // リアルタイム監視を解除するための変数
+    let currentUserEmail = null;
+    let unsubscribe = null;
 
     const loginContainer = document.getElementById('loginContainer');
     const appContainer = document.getElementById('appContainer');
     const chatContainer = document.getElementById('chatContainer');
     const messageInput = document.getElementById('messageInput');
     const sendButton = document.getElementById('sendButton');
-    const roomSelect = document.getElementById('roomSelect');
+    const userSelect = document.getElementById('userSelect');
     
     const emailInput = document.getElementById('emailInput');
     const passwordInput = document.getElementById('passwordInput');
@@ -200,30 +199,73 @@
     onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUserId = user.uid;
+            currentUserEmail = user.email;
             loginContainer.style.display = 'none';
             appContainer.style.display = 'flex';
-            startChatListening(roomSelect.value); // 初期部屋のチャット開始
+            
+            // ログインしたら、まずチャット相手のリスト（ユーザー一覧）を作ってからチャット開始
+            setupUserList();
         } else {
             loginContainer.style.display = 'flex';
             appContainer.style.display = 'none';
         }
     });
 
-    // トークルームが切り替わったら読み直す
-    roomSelect.addEventListener('change', () => {
-        startChatListening(roomSelect.value);
+    // チャット相手のリストを自動生成する関数
+    async function setupUserList() {
+        // ※ 本来はFirebase Authenticationのユーザー一覧を直接取得するにはサーバーサイドの権限が必要なため、
+        // 今回は「メッセージを送ったことがある人（過去ログにいる人）」、または「あらかじめ指定したアドレス」をリスト化します。
+        // ここに、あなたが一瞬テストで追加した家族や友達のメールアドレスを配列で書いておくと、最初から確実に選択肢に出せます！
+        const memberEmails = [
+            currentUserEmail,
+            "s43473105@icloud.com", 
+        ];
+
+        userSelect.innerHTML = '';
+        memberEmails.forEach(email => {
+            if (email === currentUserEmail) return; // 自分自身は選択肢から外す
+            const option = document.createElement('option');
+            option.value = email;
+            option.innerText = email;
+            userSelect.appendChild(option);
+        });
+
+        // 相手が選択されたらチャットルームを起動
+        if (userSelect.value) {
+            startChatListening();
+        } else {
+            // もしリストが空ならデフォルトで案内を出す
+            const option = document.createElement('option');
+            option.innerText = "選択できる相手がいません";
+            userSelect.appendChild(option);
+        }
+    }
+
+    // 宛先を切り替えたらチャットを読み直す
+    userSelect.addEventListener('change', () => {
+        startChatListening();
     });
+
+    // 自分と相手のメールアドレスから、2人だけの固有の部屋ID（roomId）を生成する関数
+    function getRoomId(email1, email2) {
+        // アルファベット順にソートして結合することで、AからB、BからA、どちらで開いても同じ部屋IDになります
+        return [email1, email2].sort().join("_");
+    }
 
     // メッセージ送信
     async function sendMessage() {
         const text = messageInput.value.trim();
-        if (text === '' || !currentUserId) return;
+        const targetEmail = userSelect.value;
+        if (text === '' || !currentUserId || !targetEmail) return;
+
+        const roomId = getRoomId(currentUserEmail, targetEmail);
 
         try {
             await addDoc(collection(db, "messages"), {
                 text: text,
                 senderId: currentUserId,
-                roomId: roomSelect.value, // どの部屋宛てか保存
+                senderEmail: currentUserEmail,
+                roomId: roomId, // 2人だけの専用部屋ID
                 createdAt: serverTimestamp()
             });
             messageInput.value = '';
@@ -235,34 +277,37 @@
     sendButton.addEventListener('click', sendMessage);
     messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 
-    // チャット受信（Safari遅延対策を適用）
-    function startChatListening(roomId) {
-        // すでに前の部屋の監視が動いていたら一回止める（Safariの重複・切断対策）
+    // チャット受信
+    function startChatListening() {
         if (unsubscribe) unsubscribe();
 
-        // 指定された roomId のメッセージだけを絞り込んで取得する設定
+        const targetEmail = userSelect.value;
+        if (!targetEmail) return;
+
+        const roomId = getRoomId(currentUserEmail, targetEmail);
+
         const q = query(
             collection(db, "messages"), 
             where("roomId", "==", roomId), 
             orderBy("createdAt", "asc")
         );
 
-        unsubscribe = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
+        unsubscribe = onSnapshot(q, (snapshot) => {
             chatContainer.innerHTML = '';
             snapshot.forEach((doc) => {
                 const data = doc.data();
-                if (!data.createdAt) return; // サーバー時間確定まで一時スキップ（遅延防止）
 
                 const messageElement = document.createElement('div');
                 messageElement.classList.add('message');
-                messageElement.classList.add(data.senderId === currentUserId ? 'sent' : 'received');
+                // 送信者のIDが自分と同じなら右（青）、違えば左（グレー）
+                messageElement.classList.add(data.senderId === currentUserId ? 'sent' : 'focused-sent' ? 'sent' : 'received');
                 messageElement.innerText = data.text;
                 chatContainer.appendChild(messageElement);
             });
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }, (error) => {
-            console.error("受信エラー、再接続します: ", error);
-            setTimeout(() => startChatListening(roomId), 2000); // エラー時自動再接続
+            console.error("Safari対策・再接続: ", error);
+            setTimeout(startChatListening, 2000);
         });
     }
 </script>
