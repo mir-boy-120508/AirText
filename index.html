@@ -133,6 +133,7 @@
     var myName = "", myAvatar = "";
     var isSignUpMode = false;
     var audioCtx = null;
+    var currentChatMessages = []; // 会話履歴を一時保管する配列
 
     function playNotificationSound() {
         try {
@@ -314,8 +315,12 @@
         chatUnsub = db.collection("rooms").doc(roomId).collection("messages").orderBy("time", "asc").onSnapshot(function(snap) {
             var area = document.getElementById('msgArea');
             area.innerHTML = "";
+            currentChatMessages = []; // 配列をリセット
+            
             snap.forEach(function(d) {
                 var data = d.data();
+                currentChatMessages.push(data); // 履歴をストック
+                
                 var m = document.createElement('div');
                 m.className = "msg " + (data.sender === me.email ? 'sent' : 'received');
                 m.innerText = data.text;
@@ -344,14 +349,14 @@
 
         db.collection("rooms").doc(roomId).collection("messages").add(msgData).then(function() {
             if (isGemini) {
-                talkToGemini(text, roomId);
+                talkToGemini(roomId);
             } else {
                 db.collection("room_status").doc(roomId).set({ unread: targetEmail }, { merge: true });
             }
         });
     }
 
-    function talkToGemini(userText, roomId) {
+    function talkToGemini(roomId) {
         if (!GEMINI_API_KEY || GEMINI_API_KEY.indexOf("★") !== -1) {
             saveBotMessage("APIキーを設定してください！", roomId);
             return;
@@ -379,9 +384,29 @@
             }
         };
 
-        // 🛠️ 修正ポイント: 「いつものGemini」のトーン（丁寧かつ親切なAIアシスタント）になるようプロンプトを調整
+        // 🛠️ 修正ポイント: 過去のチャット履歴をGeminiが理解できるフォーマットに変換
+        var contentsArray = [];
+        
+        // 直近15件程度の会話に絞って履歴を作成（多すぎるとエラーになるのを防ぐため）
+        var startIdx = Math.max(0, currentChatMessages.length - 15);
+        for (var i = startIdx; i < currentChatMessages.length; i++) {
+            var msg = currentChatMessages[i];
+            var role = (msg.sender === me.email) ? "user" : "model";
+            contentsArray.push({
+                role: role,
+                parts: [{ text: msg.text }]
+            });
+        }
+
+        // 基本の口調のシステム指示を先頭に注入
+        var systemInstruction = "【システム指示】あなたは丁寧で親切なGoogleのAIアシスタント「Gemini」です。これまでの会話の流れをしっかり踏まえ、文脈に沿って簡潔で分かりやすい日本語（基本は敬語で2文以内）でスマートに返答してください。";
+        
+        if (contentsArray.length > 0 && contentsArray[contentsArray.length - 1].role === "user") {
+            contentsArray[contentsArray.length - 1].parts[0].text += " (" + systemInstruction + ")";
+        }
+
         var requestBody = JSON.stringify({
-            contents: [{ parts: [{ text: userText + " (条件: 丁寧で親切なGoogleのAIアシスタント「Gemini」として、簡潔で分かりやすい日本語で2文以内で返答してください。基本は敬語で、スマートな雰囲気にしてください。)" }] }]
+            contents: contentsArray
         });
         xhr.send(requestBody);
     }
