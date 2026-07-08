@@ -4,18 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AirText Max</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="AirText">
+
     <style>
         html, body { height: 100%; margin: 0; font-family: -apple-system, sans-serif; background: #f2f2f7; overflow: hidden; }
         .view { display: none; height: 100vh; flex-direction: column; }
         
-        /* ログイン・新規登録 */
+        /* ログイン画面 */
         #loginView { background: #000; color: white; display: flex; justify-content: center; align-items: center; }
         .login-box { width: 320px; text-align: center; padding: 20px; }
         .login-box input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: none; background: #1c1c1e; color: white; font-size: 16px; -webkit-appearance: none; box-sizing: border-box; }
-        .login-box button { width: 100%; padding: 15px; border-radius: 12px; border: none; background: #007aff; color: white; font-size: 16px; cursor: pointer; margin-bottom: 15px; }
+        .login-box button { width: 100%; padding: 15px; border-radius: 12px; border: none; background: #007aff; color: white; font-size: 16px; cursor: pointer; margin-bottom: 12px; font-weight: bold; }
+        .google-btn { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #ddd; background: white; color: #333; font-size: 16px; cursor: pointer; margin-bottom: 15px; font-weight: bold; }
         .switch-link { color: #007aff; cursor: pointer; text-decoration: underline; font-size: 14px; }
 
-        /* ホーム・連絡先（AirText） */
+        /* ホーム画面（AirText） */
         #homeView { background: white; display: flex; }
         .header { padding: 15px 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; }
         .contact-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -26,37 +33,28 @@
         .icon-btn { font-size: 24px; cursor: pointer; background: none; border: none; padding: 5px; }
 
         /* チャット画面 */
+        #chatView { background: white; }
         .chat-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; }
-        .message-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; background: #fff; }
+        .message-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; background: #fff; height: calc(100vh - 130px); }
         .msg { max-width: 75%; padding: 12px 16px; border-radius: 20px; margin-bottom: 8px; font-size: 16px; line-height: 1.4; word-wrap: break-word; }
-        .msg img, .msg video { max-width: 100%; border-radius: 10px; margin-top: 5px; display: block; }
         .sent { background: #007aff; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
         .received { background: #e5e5ea; color: black; align-self: flex-start; border-bottom-left-radius: 4px; }
         
-        .input-bar { padding: 10px 15px; display: flex; background: white; border-top: 1px solid #ddd; align-items: center; }
+        .input-bar { padding: 10px 15px; display: flex; background: white; border-top: 1px solid #ddd; align-items: center; height: 50px; }
         .input-bar input[type="text"] { flex: 1; padding: 12px 18px; border: 1px solid #ddd; border-radius: 25px; outline: none; font-size: 16px; -webkit-appearance: none; }
-        .media-btn { font-size: 24px; margin-right: 10px; cursor: pointer; color: #007aff; }
-
-        /* 設定画面 */
-        #settingsView { background: white; padding: 30px; align-items: center; }
-        .setting-box { width: 100%; max-width: 350px; text-align: center; margin-top: 50px; }
-        .setting-box input[type="text"] { width: 100%; padding: 12px; margin: 20px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
-        
-        /* 通話中モーダル */
-        #callModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); color: white; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
-        .call-btn { width: 70px; height: 70px; border-radius: 50%; border: none; color: white; font-size: 24px; cursor: pointer; margin: 20px; }
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>
 </head>
 <body>
 
 <div class="view" id="loginView">
     <div class="login-box">
         <h1 id="authTitle" style="font-size: 40px; margin-bottom: 30px;">AirText</h1>
+        <button class="google-btn" id="googleLoginBtn">🌐 Googleログイン</button>
+        <div style="margin: 15px 0; color: #666;">または</div>
         <input type="email" id="email" placeholder="メールアドレス">
         <input type="password" id="pw" placeholder="パスワード">
         <button id="mainAuthBtn">ログイン</button>
@@ -68,7 +66,8 @@
     <div style="width:100%; display:flex; flex-direction:column;">
         <div class="header">
             <button class="icon-btn" id="toSettingsBtn">⚙️</button>
-            <h2 style="margin:0; font-size:24px;">AirText</h2> <div id="myEmail" style="font-size:12px; color:#888;"></div>
+            <h2 style="margin:0; font-size:24px;">AirText</h2>
+            <div id="myEmail" style="font-size:12px; color:#888;"></div>
         </div>
         <div class="contact-list" id="contactList"></div>
     </div>
@@ -79,13 +78,12 @@
     <div class="chat-header">
         <button class="icon-btn" id="backBtn">◀</button>
         <div id="chatTitle" style="font-weight:bold; font-size:18px;"></div>
-        <button class="icon-btn" id="callBtn">📞</button>
+        <div></div>
     </div>
     <div class="message-area" id="msgArea"></div>
     <div class="input-bar">
-        <label class="media-btn" for="mediaInput">📎</label>
-        <input type="file" id="mediaInput" style="display:none;"> <input type="text" id="msgInput" placeholder="メッセージ">
-        <button class="send-btn" id="sendBtn" style="background:#007aff; color:white; border:none; width:40px; height:40px; border-radius:50%; margin-left:10px; font-size:20px;">↑</button>
+        <input type="text" id="msgInput" placeholder="メッセージ">
+        <button id="sendBtn" style="background:#007aff; color:white; border:none; width:40px; height:40px; border-radius:50%; margin-left:10px; font-size:20px; cursor:pointer;">↑</button>
     </div>
 </div>
 
@@ -106,12 +104,6 @@
     </div>
 </div>
 
-<div id="callModal">
-    <h2 id="callStatus">通話呼び出し中...</h2>
-    <div id="callTargetName" style="font-size:20px; margin-bottom:30px;"></div>
-    <button class="call-btn" id="endCallBtn" style="background:#ff3b30;">❌</button>
-</div>
-
 <script>
     var firebaseConfig = {
         apiKey: "AIzaSyAFxMMoJ6q0pQqRimkJaY6eDyBWgLqaNWc",
@@ -126,36 +118,46 @@
     var db = firebase.firestore();
     var auth = firebase.auth();
 
-    var me = null, targetEmail = null, chatUnsub = null, peer = null, currentCall = null;
+    // ★ここに取得したGeminiのAPIキーを貼り付ける★
+    var GEMINI_API_KEY = "★ここに取得したGeminiのAPIキーを貼り付ける★";
+
+    var me = null, targetEmail = null, chatUnsub = null;
     var myName = "", myAvatar = "";
     var isSignUpMode = false;
-
-    // 通知音用のオーディオコンテキスト
     var audioCtx = null;
+
     function playNotificationSound() {
         try {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             var osc = audioCtx.createOscillator();
             var gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
+            osc.connect(gain); gain.connect(audioCtx.destination);
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
-            osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.1); // A5
-            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.4);
-        } catch(e) { console.log(e); }
+            osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+        } catch(e) {}
     }
 
     function show(id) {
         var views = document.querySelectorAll('.view');
-        for (var i = 0; i < views.length; i++) { views[i].style.display = 'none'; }
-        document.getElementById(id).style.display = 'flex';
+        for (var i = 0; i < views.length; i++) { views[i].style.style.display = 'none'; }
+        var targetView = document.getElementById(id);
+        if (targetView) {
+            targetView.style.display = 'block';
+            if (id === 'homeView' || id === 'chatView') { targetView.style.display = 'flex'; }
+        }
     }
 
-    // ログイン・新規登録のモード切り替え
+    // Googleログイン
+    document.getElementById('googleLoginBtn').onclick = function() {
+        var provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithRedirect(provider);
+    };
+
+    // モード切り替え
     document.getElementById('switchAuthMode').onclick = function() {
         isSignUpMode = !isSignUpMode;
         if (isSignUpMode) {
@@ -169,7 +171,6 @@
         }
     };
 
-    // 認証ボタン押下
     document.getElementById('mainAuthBtn').onclick = function() {
         var emailStr = document.getElementById('email').value.trim();
         var pwStr = document.getElementById('pw').value.trim();
@@ -180,8 +181,7 @@
                 .then(function() { alert("アカウントを作成しました！"); })
                 .catch(function(e) { alert("登録失敗: " + e.message); });
         } else {
-            auth.signInWithEmailAndPassword(emailStr, pwStr)
-                .catch(function() { alert("ログイン失敗"); });
+            auth.signInWithEmailAndPassword(emailStr, pwStr).catch(function() { alert("ログイン失敗"); });
         }
     };
 
@@ -190,7 +190,6 @@
             me = user;
             document.getElementById('myEmail').innerText = me.email;
             
-            // プロフィール読み込み
             db.collection("profiles").doc(me.email).onSnapshot(function(docSnap) {
                 var data = docSnap.data();
                 if (data) {
@@ -199,7 +198,6 @@
                     document.getElementById('nicknameInput').value = myName;
                     if (myAvatar) document.getElementById('myAvatarPreview').src = myAvatar;
                 }
-                initPeer();
                 show('homeView');
                 listenContacts();
             });
@@ -220,7 +218,7 @@
     document.getElementById('saveSettingsBtn').onclick = function() {
         var name = document.getElementById('nicknameInput').value.trim();
         var avatar = document.getElementById('myAvatarPreview').src;
-        db.collection("profiles").doc(me.email).set({ name: name, avatar: avatar.startsWith('data') ? avatar : myAvatar }, { merge: true }).then(function() {
+        db.collection("profiles").doc(me.email).set({ name: name, avatar: avatar.indexOf('data') === 0 ? avatar : myAvatar }, { merge: true }).then(function() {
             alert("プロフィールを保存しました");
             show('homeView');
         });
@@ -233,16 +231,23 @@
         db.collection("contact_links").doc(linkId).set({ users: [me.email, mail], time: Date.now() });
     };
 
-    // 連絡先一覧監視
     var firstLoad = true;
     function listenContacts() {
         db.collection("contact_links").where("users", "array-contains", me.email).onSnapshot(function(snap) {
             var list = document.getElementById('contactList');
             list.innerHTML = "";
+
+            // 🤖 Gemini AI (友達) を追加
+            var geminiItem = document.createElement('div');
+            geminiItem.className = "contact-item";
+            geminiItem.innerHTML = '<div class="avatar" style="background:#6840d4;">🤖</div><div style="font-weight:bold;">Gemini AI (友達)</div>';
+            geminiItem.onclick = function() { openChat("gemini-ai-bot"); };
+            list.appendChild(geminiItem);
+
             snap.forEach(function(d) {
                 var users = d.data().users;
                 var other = users[0] === me.email ? users[1] : users[0];
-                var safeId = btoa(other).replace(/=/g,'');
+                var safeId = other.replace(/[^a-zA-Z0-9]/g, ""); // iPhone5でバグるbtoaを廃止、安全な文字列IDに変換
                 
                 var item = document.createElement('div');
                 item.className = "contact-item";
@@ -258,18 +263,13 @@
                     }
                 });
 
-                // 未読バッジ & 通知音
                 var roomId = [me.email, other].sort().join("_");
                 db.collection("room_status").doc(roomId).onSnapshot(function(docSnap) {
                     var status = docSnap.data();
                     var b = item.querySelector('.badge');
                     if (status && status.unread && status.unread === me.email) {
                         if (!b) {
-                            b = document.createElement('div');
-                            b.className = "badge";
-                            b.innerText = "新着";
-                            item.appendChild(b);
-                            // 起動直後の大量通知鳴り響きを防止
+                            b = document.createElement('div'); b.className = "badge"; b.innerText = "新着"; item.appendChild(b);
                             if (!firstLoad) { playNotificationSound(); }
                         }
                     } else { if (b) b.remove(); }
@@ -282,14 +282,17 @@
         });
     }
 
-    // チャット画面を開く
     function openChat(email) {
         targetEmail = email;
-        document.getElementById('chatTitle').innerText = targetEmail;
+        document.getElementById('chatTitle').innerText = (email === "gemini-ai-bot") ? "Gemini AI" : targetEmail;
         show('chatView');
-        var roomId = [me.email, targetEmail].sort().join("_");
         
-        db.collection("room_status").doc(roomId).set({ unread: "" }, { merge: true });
+        var safeMyId = me.email.replace(/[^a-zA-Z0-9]/g, "");
+        var roomId = (email === "gemini-ai-bot") ? "room_with_" + safeMyId + "_gemini" : [me.email, targetEmail].sort().join("_");
+        
+        if (email !== "gemini-ai-bot") {
+            db.collection("room_status").doc(roomId).set({ unread: "" }, { merge: true });
+        }
 
         if (chatUnsub) chatUnsub();
         chatUnsub = db.collection("rooms").doc(roomId).collection("messages").orderBy("time", "asc").onSnapshot(function(snap) {
@@ -299,129 +302,87 @@
                 var data = d.data();
                 var m = document.createElement('div');
                 m.className = "msg " + (data.sender === me.email ? 'sent' : 'received');
-                
-                if (data.type === "image") {
-                    m.innerHTML = (data.text ? '<div>' + data.text + '</div>' : '') + '<img src="'+data.file+'">';
-                } else if (data.type === "video") {
-                    m.innerHTML = (data.text ? '<div>' + data.text + '</div>' : '') + '<video src="'+data.file+'" controls>';
-                } else {
-                    m.innerText = data.text;
-                }
+                m.innerText = data.text;
                 area.appendChild(m);
             });
             area.scrollTop = area.scrollHeight;
         });
     }
 
-    function send(type, fileData) {
+    function send() {
         var input = document.getElementById('msgInput');
         var text = input.value.trim();
-        if (!fileData && !text) return;
-        var roomId = [me.email, targetEmail].sort().join("_");
+        if (!text || !targetEmail) return;
+
+        var isGemini = (targetEmail === "gemini-ai-bot");
+        var safeMyId = me.email.replace(/[^a-zA-Z0-9]/g, "");
+        var roomId = isGemini ? "room_with_" + safeMyId + "_gemini" : [me.email, targetEmail].sort().join("_");
         
         var msgData = {
             text: text,
             sender: me.email,
             time: Date.now(),
-            type: type || "text"
+            type: "text"
         };
-        if (fileData) msgData.file = fileData;
 
-        db.collection("rooms").doc(roomId).collection("messages").add(msgData).then(function(){
-            db.collection("room_status").doc(roomId).set({ unread: targetEmail }, { merge: true });
-        });
         input.value = "";
-    }
 
-    document.getElementById('sendBtn').onclick = function() { send("text"); };
-    document.getElementById('msgInput').onkeypress = function(e) { if (e.key === 'Enter') send("text"); };
-    document.getElementById('backBtn').onclick = function() { show('homeView'); };
-
-    // 画像・動画の送信バグ修正（iPhone 5の古いFileReader互換処理）
-    document.getElementById('mediaInput').onchange = function(e) {
-        var file = e.target.files[0];
-        if (!file) return;
-        
-        // ファイルタイプの判定
-        var type = "image";
-        if (file.type && file.type.indexOf("video") !== -1) { type = "video"; }
-        else if (file.name && (file.name.indexOf(".mp4") !== -1 || file.name.indexOf(".MOV") !== -1)) { type = "video"; }
-
-        var reader = new FileReader();
-        reader.onload = function() {
-            send(type, reader.result);
-            document.getElementById('mediaInput').value = ""; // 連続送信できるようにリセット
-        };
-        reader.readAsDataURL(file);
-    };
-
-    // 📞 通話機能 (iPhone 5 / iOS 10の旧式互換 WebGetUserMedia)
-    function initPeer() {
-        var peerId = btoa(me.email).replace(/=/g, '');
-        peer = new Peer(peerId);
-        
-        peer.on('call', function(call) {
-            if (confirm("着信中: 通話に出ますか？")) {
-                // 古いiOS対応のためのクロスブラウザ処理
-                var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-                if (!getUserMedia && navigator.mediaDevices) {
-                    navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream) {
-                        call.answer(stream);
-                        handleCall(call);
-                    });
-                } else if (getUserMedia) {
-                    getUserMedia.call(navigator, { audio: true, video: false }, function(stream) {
-                        call.answer(stream);
-                        handleCall(call);
-                    }, function(err) { alert("マイクが起動できません"); });
-                }
+        db.collection("rooms").doc(roomId).collection("messages").add(msgData).then(function() {
+            if (isGemini) {
+                talkToGemini(text, roomId);
             } else {
-                call.close();
+                db.collection("room_status").doc(roomId).set({ unread: targetEmail }, { merge: true });
             }
         });
     }
 
-    function handleCall(call) {
-        currentCall = call;
-        document.getElementById('callStatus').innerText = "通話中...";
-        document.getElementById('callModal').style.display = 'flex';
-        
-        call.on('stream', function(remoteStream) {
-            var audio = document.createElement('audio');
-            audio.srcObject = remoteStream;
-            audio.play();
-        });
-        call.on('close', function() { endCall(); });
-    }
-
-    document.getElementById('callBtn').onclick = function() {
-        var targetPeerId = btoa(targetEmail).replace(/=/g, '');
-        document.getElementById('callStatus').innerText = "呼び出し中...";
-        document.getElementById('callTargetName').innerText = targetEmail;
-        document.getElementById('callModal').style.display = 'flex';
-        
-        var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-        if (!getUserMedia && navigator.mediaDevices) {
-            navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream) {
-                var call = peer.call(targetPeerId, stream);
-                handleCall(call);
-            }).catch(function(err) { alert("マイクの許可が必要です"); endCall(); });
-        } else if (getUserMedia) {
-            getUserMedia.call(navigator, { audio: true, video: false }, function(stream) {
-                var call = peer.call(targetPeerId, stream);
-                handleCall(call);
-            }, function(err) { alert("マイクの許可が必要です"); endCall(); });
-        } else {
-            alert("この端末は通話に対応していません");
-            endCall();
+    function talkToGemini(userText, roomId) {
+        if (!GEMINI_API_KEY || GEMINI_API_KEY.indexOf("★") !== -1) {
+            saveBotMessage("APIキーを設定してください！", roomId);
+            return;
         }
-    };
 
-    function endCall() {
-        if (currentCall) currentCall.close();
-        document.getElementById('callModal').style.display = 'none';
+        var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY;
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    try {
+                        var res = JSON.parse(xhr.responseText);
+                        var reply = res.candidates[0].content.parts[0].text;
+                        saveBotMessage(reply, roomId);
+                    } catch(e) {
+                        saveBotMessage("解析エラーが発生しました。", roomId);
+                    }
+                } else {
+                    saveBotMessage("通信エラーが発生しました。", roomId);
+                }
+            }
+        };
+
+        var requestBody = JSON.stringify({
+            contents: [{ parts: [{ text: userText + " (親しみやすい友達として短めに返答してください。)" }] }]
+        });
+        xhr.send(requestBody);
     }
-    document.getElementById('endCallBtn').onclick = endCall;
+
+    function saveBotMessage(botText, roomId) {
+        db.collection("rooms").doc(roomId).collection("messages").add({
+            text: botText,
+            sender: "gemini-ai-bot",
+            time: Date.now(),
+            type: "text"
+        }).then(function() {
+            playNotificationSound();
+        });
+    }
+
+    document.getElementById('sendBtn').onclick = send;
+    document.getElementById('msgInput').onkeypress = function(e) { if (e.key === 'Enter' || e.keyCode === 13) send(); };
+    document.getElementById('backBtn').onclick = function() { show('homeView'); };
 </script>
 </body>
 </html>
