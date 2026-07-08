@@ -3,45 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AirText v2.1 (Legacy-Fit)</title>
+    <title>AirText Max</title>
     <style>
         html, body { height: 100%; margin: 0; font-family: -apple-system, sans-serif; background: #f2f2f7; overflow: hidden; }
         .view { display: none; height: 100vh; flex-direction: column; }
         
-        /* ログイン画面 */
+        /* ログイン */
         #loginView { background: #000; color: white; display: flex; justify-content: center; align-items: center; }
         .login-box { width: 320px; text-align: center; }
         .login-box input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: none; background: #1c1c1e; color: white; font-size: 16px; -webkit-appearance: none; }
         .login-box button { width: 100%; padding: 15px; border-radius: 12px; border: none; background: #007aff; color: white; font-size: 16px; cursor: pointer; }
 
-        /* ホーム画面 */
+        /* ホーム・連絡先 */
         #homeView { background: white; display: flex; }
-        .header { padding: 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+        .header { padding: 15px 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; }
         .contact-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .contact-item { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; align-items: center; cursor: pointer; position: relative; }
-        .contact-item:active { background: #f2f2f7; }
-        .avatar { width: 50px; height: 50px; background: #007aff; border-radius: 50%; margin-right: 15px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 20px; }
+        .avatar { width: 50px; height: 50px; background: #007aff; border-radius: 50%; margin-right: 15px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px; object-fit: cover; }
         .badge { position: absolute; right: 25px; background: #ff3b30; color: white; padding: 4px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; }
-
-        /* プラスボタン */
-        .add-btn { position: fixed; bottom: 30px; right: 30px; width: 65px; height: 65px; background: #007aff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 35px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); cursor: pointer; z-index: 999; }
+        .add-btn { position: fixed; bottom: 30px; right: 30px; width: 65px; height: 65px; background: #007aff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 35px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); cursor: pointer; z-index: 99; }
+        .icon-btn { font-size: 24px; cursor: pointer; background: none; border: none; padding: 5px; }
 
         /* チャット画面 */
-        #chatView { background: white; }
-        .chat-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; align-items: center; background: #f9f9f9; }
-        .back-btn { margin-right: 15px; color: #007aff; cursor: pointer; font-size: 18px; font-weight: bold; }
-        .message-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; }
+        .chat-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; }
+        .message-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; background: #fff; }
         .msg { max-width: 75%; padding: 12px 16px; border-radius: 20px; margin-bottom: 8px; font-size: 16px; line-height: 1.4; word-wrap: break-word; }
+        .msg img, .msg video { max-width: 100%; border-radius: 10px; margin-top: 5px; display: block; }
         .sent { background: #007aff; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
         .received { background: #e5e5ea; color: black; align-self: flex-start; border-bottom-left-radius: 4px; }
-        .input-bar { padding: 10px 20px; display: flex; background: white; border-top: 1px solid #ddd; align-items: center; }
-        .input-bar input { flex: 1; padding: 12px 18px; border: 1px solid #ddd; border-radius: 25px; outline: none; font-size: 16px; -webkit-appearance: none; }
-        .send-btn { background: #007aff; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; margin-left: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 20px; }
+        
+        .input-bar { padding: 10px 15px; display: flex; background: white; border-top: 1px solid #ddd; align-items: center; }
+        .input-bar input[type="text"] { flex: 1; padding: 12px 18px; border: 1px solid #ddd; border-radius: 25px; outline: none; font-size: 16px; -webkit-appearance: none; }
+        .media-btn { font-size: 24px; margin-right: 10px; cursor: pointer; color: #007aff; }
+
+        /* 設定画面 */
+        #settingsView { background: white; padding: 30px; align-items: center; }
+        .setting-box { width: 100%; max-width: 350px; text-align: center; margin-top: 50px; }
+        .setting-box input[type="text"] { width: 100%; padding: 12px; margin: 20px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; }
+        
+        /* 通話中モーダル */
+        #callModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); color: white; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+        .call-btn { width: 70px; height: 70px; border-radius: 50%; border: none; color: white; font-size: 24px; cursor: pointer; margin: 20px; }
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>
 </head>
 <body>
 
@@ -57,6 +65,7 @@
 <div class="view" id="homeView">
     <div style="width:100%; display:flex; flex-direction:column;">
         <div class="header">
+            <button class="icon-btn" id="toSettingsBtn">⚙️</button>
             <h2 style="margin:0">連絡先</h2>
             <div id="myEmail" style="font-size:12px; color:#888;"></div>
         </div>
@@ -67,18 +76,43 @@
 
 <div class="view" id="chatView">
     <div class="chat-header">
-        <div class="back-btn" id="backBtn">＜</div>
+        <button class="icon-btn" id="backBtn">◀</button>
         <div id="chatTitle" style="font-weight:bold; font-size:18px;"></div>
+        <button class="icon-btn" id="callBtn">📞</button>
     </div>
     <div class="message-area" id="msgArea"></div>
     <div class="input-bar">
+        <label class="media-btn" for="mediaInput">📎</label>
+        <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;">
         <input type="text" id="msgInput" placeholder="メッセージ">
-        <button class="send-btn" id="sendBtn">↑</button>
+        <button class="send-btn" id="sendBtn" style="background:#007aff; color:white; border:none; width:40px; height:40px; border-radius:50%; margin-left:10px; font-size:20px;">↑</button>
     </div>
 </div>
 
+<div class="view" id="settingsView">
+    <div class="chat-header" style="width:100%; position:absolute; top:0; left:0;">
+        <button class="icon-btn" id="backFromSettings">◀ 戻る</button>
+        <div style="font-weight:bold;">プロフィール設定</div>
+        <div></div>
+    </div>
+    <div class="setting-box">
+        <label for="avatarInput">
+            <img class="avatar" id="myAvatarPreview" style="width:100px; height:100px; margin:0 auto; cursor:pointer; background:#ccc;" src="">
+            <p style="font-size:12px; color:#007aff;">画像をタップして変更</p>
+        </label>
+        <input type="file" id="avatarInput" accept="image/*" style="display:none;">
+        <input type="text" id="nicknameInput" placeholder="ニックネームを入力">
+        <button id="saveSettingsBtn" style="width:100%; padding:12px; background:#007aff; color:white; border:none; border-radius:10px; font-size:16px;">保存する</button>
+    </div>
+</div>
+
+<div id="callModal">
+    <h2 id="callStatus">通話呼び出し中...</h2>
+    <div id="callTargetName" style="font-size:20px; margin-bottom:30px;"></div>
+    <button class="call-btn" id="endCallBtn" style="background:#ff3b30;">❌</button>
+</div>
+
 <script>
-    // あなたのFirebase設定（古いバージョンに対応した形式）
     var firebaseConfig = {
         apiKey: "AIzaSyAFxMMoJ6q0pQqRimkJaY6eDyBWgLqaNWc",
         authDomain: "airtext-mirboy.firebaseapp.com",
@@ -88,14 +122,12 @@
         appId: "1:1091018853143:web:c1ed8f39e4886656800552"
     };
 
-    // 初期化
     firebase.initializeApp(firebaseConfig);
     var db = firebase.firestore();
     var auth = firebase.auth();
 
-    var me = null;
-    var targetEmail = null;
-    var chatUnsub = null;
+    var me = null, targetEmail = null, chatUnsub = null, peer = null, currentCall = null;
+    var myName = "", myAvatar = "";
 
     function show(id) {
         var views = document.querySelectorAll('.view');
@@ -105,126 +137,222 @@
 
     // ログイン
     document.getElementById('loginBtn').onclick = function() {
-        auth.signInWithEmailAndPassword(document.getElementById('email').value.trim(), document.getElementById('pw').value.trim())
-            .catch(function() { alert("ログイン失敗"); });
+        auth.signInWithEmailAndPassword(document.getElementById('email').value.trim(), document.getElementById('pw').value.trim()).catch(function() { alert("ログイン失敗"); });
     };
 
     auth.onAuthStateChanged(function(user) {
         if (user) {
             me = user;
             document.getElementById('myEmail').innerText = me.email;
-            show('homeView');
-            listenContacts();
+            
+            // プロフィール読み込み
+            db.collection("profiles").doc(me.email).onSnapshot(function(docSnap) {
+                var data = docSnap.data();
+                if (data) {
+                    myName = data.name || "";
+                    myAvatar = data.avatar || "";
+                    document.getElementById('nicknameInput').value = myName;
+                    if (myAvatar) document.getElementById('myAvatarPreview').src = myAvatar;
+                }
+                initPeer(); // 通話システムの準備
+                show('homeView');
+                listenContacts();
+            });
         } else {
             show('loginView');
         }
     });
 
-    // 連絡先追加
-    document.getElementById('addBtn').onclick = function() {
-        var mail = prompt("追加する相手のメールアドレスを入力してください:");
-        if (!mail || mail === me.email) return;
-        
-        var linkId = [me.email, mail].sort().join("_");
-        db.collection("contact_links").doc(linkId).set({
-            users: [me.email, mail],
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(function() {
-            alert("追加しました！");
+    // 設定画面の遷移
+    document.getElementById('toSettingsBtn').onclick = function() { show('settingsView'); };
+    document.getElementById('backFromSettings').onclick = function() { show('homeView'); };
+
+    // プロフィール画像選択(Base64変換)
+    document.getElementById('avatarInput').onchange = function(e) {
+        var reader = new FileReader();
+        reader.onload = function() {
+            document.getElementById('myAvatarPreview').src = reader.result;
+        };
+        if (e.target.files[0]) reader.readAsDataURL(e.target.files[0]);
+    };
+
+    // プロフィール保存
+    document.getElementById('saveSettingsBtn').onclick = function() {
+        var name = document.getElementById('nicknameInput').value.trim();
+        var avatar = document.getElementById('myAvatarPreview').src;
+        db.collection("profiles").doc(me.email).set({ name: name, avatar: avatar.startsWith('data') ? avatar : myAvatar }, { merge: true }).then(function() {
+            alert("プロフィールを保存しました");
+            show('homeView');
         });
     };
 
-    // 連絡先監視
-    function listenContacts() {
-        db.collection("contact_links").where("users", "array-contains", me.email)
-            .onSnapshot(function(snap) {
-                var list = document.getElementById('contactList');
-                list.innerHTML = "";
-                snap.forEach(function(d) {
-                    var users = d.data().users;
-                    var other = users[0] === me.email ? users[1] : users[0];
-                    
-                    var item = document.createElement('div');
-                    item.className = "contact-item";
-                    item.innerHTML = '<div class="avatar">' + other[0].toUpperCase() + '</div><div>' + other + '</div>';
-                    
-                    // 未読監視用のクロージャ
-                    (function(targetItem, otherUser) {
-                        var roomId = [me.email, otherUser].sort().join("_");
-                        db.collection("room_status").doc(roomId).onSnapshot(function(docSnap) {
-                            var status = docSnap.data();
-                            var b = targetItem.querySelector('.badge');
-                            if (status && status.unreadBy && status.unreadBy.indexOf(me.email) !== -1) {
-                                if (!b) {
-                                    b = document.createElement('div');
-                                    b.className = "badge";
-                                    b.innerText = "新着";
-                                    targetItem.appendChild(b);
-                                }
-                            } else {
-                                if (b) b.remove();
-                            }
-                        });
-                    })(item, other);
+    // 連絡先追加
+    document.getElementById('addBtn').onclick = function() {
+        var mail = prompt("追加する相手のメールアドレスを入力:");
+        if (!mail || mail === me.email) return;
+        var linkId = [me.email, mail].sort().join("_");
+        db.collection("contact_links").doc(linkId).set({ users: [me.email, mail], time: Date.now() });
+    };
 
-                    item.onclick = function() { openChat(other); };
-                    list.appendChild(item);
+    // 連絡先一覧監視
+    function listenContacts() {
+        db.collection("contact_links").where("users", "array-contains", me.email).onSnapshot(function(snap) {
+            var list = document.getElementById('contactList');
+            list.innerHTML = "";
+            snap.forEach(function(d) {
+                var users = d.data().users;
+                var other = users[0] === me.email ? users[1] : users[0];
+                
+                var item = document.createElement('div');
+                item.className = "contact-item";
+                item.innerHTML = '<div class="avatar" id="av-'+btoa(other).replace(/=/g,'')+'">'+other[0].toUpperCase() + '</div><div style="font-weight:bold;" id="name-'+btoa(other).replace(/=/g,'')+'">' + other + '</div>';
+                
+                // 相手のプロフィール（名前と画像）を適用
+                db.collection("profiles").doc(other).onSnapshot(function(pSnap) {
+                    var pData = pSnap.data();
+                    if (pData) {
+                        var avEl = document.getElementById('av-'+btoa(other).replace(/=/g,''));
+                        var nmEl = document.getElementById('name-'+btoa(other).replace(/=/g,''));
+                        if (pData.avatar && avEl) { avEl.innerHTML = ""; var img = document.createElement('img'); img.src = pData.avatar; img.className="avatar"; img.style.margin="0"; targetItem=item; avEl.appendChild(img); }
+                        if (pData.name && nmEl) { nmEl.innerText = pData.name; }
+                    }
                 });
+
+                // 未読バッジ
+                var roomId = [me.email, other].sort().join("_");
+                db.collection("room_status").doc(roomId).onSnapshot(function(docSnap) {
+                    var status = docSnap.data();
+                    var b = item.querySelector('.badge');
+                    if (status && status.unread && status.unread === me.email) {
+                        if (!b) { b = document.createElement('div'); b.className = "badge"; b.innerText = "新着"; item.appendChild(b); }
+                    } else { if (b) b.remove(); }
+                });
+
+                item.onclick = function() { openChat(other); };
+                list.appendChild(item);
             });
+        });
     }
 
-    // チャット画面
+    // チャット画面を開く
     function openChat(email) {
         targetEmail = email;
         document.getElementById('chatTitle').innerText = targetEmail;
         show('chatView');
-        
         var roomId = [me.email, targetEmail].sort().join("_");
         
-        // 既読
-        db.collection("room_status").doc(roomId).set({
-            unreadBy: firebase.firestore.FieldValue.arrayRemove(me.email)
-        }, { merge: true });
+        db.collection("room_status").doc(roomId).set({ unread: "" }, { merge: true });
 
         if (chatUnsub) chatUnsub();
-        chatUnsub = db.collection("rooms").doc(roomId).collection("messages").orderBy("createdAt", "asc")
-            .onSnapshot(function(snap) {
-                var area = document.getElementById('msgArea');
-                area.innerHTML = "";
-                snap.forEach(function(d) {
-                    var data = d.data();
-                    var m = document.createElement('div');
-                    m.className = "msg " + (data.sender === me.email ? 'sent' : 'received');
+        chatUnsub = db.collection("rooms").doc(roomId).collection("messages").orderBy("time", "asc").onSnapshot(function(snap) {
+            var area = document.getElementById('msgArea');
+            area.innerHTML = "";
+            snap.forEach(function(d) {
+                var data = d.data();
+                var m = document.createElement('div');
+                m.className = "msg " + (data.sender === me.email ? 'sent' : 'received');
+                
+                if (data.type === "image") {
+                    m.innerHTML = '<div>' + data.text + '</div><img src="'+data.file+'">';
+                } else if (data.type === "video") {
+                    m.innerHTML = '<div>' + data.text + '</div><video src="'+data.file+'" controls>';
+                } else {
                     m.innerText = data.text;
-                    area.appendChild(m);
-                });
-                area.scrollTop = area.scrollHeight;
+                }
+                area.appendChild(m);
             });
+            area.scrollTop = area.scrollHeight;
+        });
     }
 
-    // 送信
-    function send() {
+    // 送信処理（iPhone 5完全対応版）
+    function send(type, fileData) {
         var input = document.getElementById('msgInput');
         var text = input.value.trim();
-        if (!text || !targetEmail) return;
+        if (!fileData && !text) return;
         var roomId = [me.email, targetEmail].sort().join("_");
         
-        db.collection("rooms").doc(roomId).collection("messages").add({
+        var msgData = {
             text: text,
             sender: me.email,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        db.collection("room_status").doc(roomId).set({
-            unreadBy: firebase.firestore.FieldValue.arrayUnion(targetEmail)
-        }, { merge: true });
-        
+            time: Date.now(), // iPhone5対策：ServerTimestampを使わず数値で保存
+            type: type || "text"
+        };
+        if (fileData) msgData.file = fileData;
+
+        db.collection("rooms").doc(roomId).collection("messages").add(msgData);
+        db.collection("room_status").doc(roomId).set({ unread: targetEmail }, { merge: true });
         input.value = "";
     }
 
-    document.getElementById('sendBtn').onclick = send;
-    document.getElementById('msgInput').onkeypress = function(e) { if (e.key === 'Enter') send(); };
+    document.getElementById('sendBtn').onclick = function() { send("text"); };
+    document.getElementById('msgInput').onkeypress = function(e) { if (e.key === 'Enter') send("text"); };
     document.getElementById('backBtn').onclick = function() { show('homeView'); };
+
+    // メディア送信（画像・動画）
+    document.getElementById('mediaInput').onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var type = file.type.startsWith("image") ? "image" : "video";
+        var reader = new FileReader();
+        reader.onload = function() {
+            send(type, reader.result);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // 📞 通話機能 (PeerJS連携)
+    function initPeer() {
+        var peerId = btoa(me.email).replace(/=/g, ''); // メールアドレスを安全なIDに変換
+        peer = new Peer(peerId);
+        
+        // 着信時の処理
+        peer.on('call', function(call) {
+            if (confirm("着信中: 通話に出ますか？")) {
+                navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream) {
+                    call.answer(stream);
+                    handleCall(call);
+                });
+            } else {
+                call.close();
+            }
+        });
+    }
+
+    function handleCall(call) {
+        currentCall = call;
+        document.getElementById('callStatus').innerText = "通話中...";
+        document.getElementById('callModal').style.display = 'flex';
+        
+        call.on('stream', function(remoteStream) {
+            var audio = document.createElement('audio');
+            audio.srcObject = remoteStream;
+            audio.play();
+        });
+        call.on('close', function() { endCall(); });
+    }
+
+    // 発信ボタン
+    document.getElementById('callBtn').onclick = function() {
+        var targetPeerId = btoa(targetEmail).replace(/=/g, '');
+        document.getElementById('callStatus').innerText = "呼び出し中...";
+        document.getElementById('callTargetName').innerText = targetEmail;
+        document.getElementById('callModal').style.display = 'flex';
+        
+        navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream) {
+            var call = peer.call(targetPeerId, stream);
+            handleCall(call);
+        }).catch(function(err) {
+            alert("マイクの許可が必要です");
+            endCall();
+        });
+    };
+
+    function endCall() {
+        if (currentCall) currentCall.close();
+        document.getElementById('callModal').style.display = 'none';
+    }
+    document.getElementById('endCallBtn').onclick = endCall;
 </script>
 </body>
 </html>
