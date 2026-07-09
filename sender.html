@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirText 公式メッセージ送信システム</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #f2f2f7; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 500px; box-sizing: border-box; }
+        h1 { font-size: 20px; margin-bottom: 20px; text-align: center; color: #333; }
+        textarea { width: 100%; height: 150px; padding: 12px; border: 1px solid #ddd; border-radius: 12px; font-size: 16px; resize: none; box-sizing: border-box; margin-bottom: 20px; outline: none; }
+        textarea:focus { border-color: #007aff; }
+        button { width: 100%; padding: 15px; background: #007aff; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .status { margin-top: 15px; font-size: 14px; color: #666; text-align: center; }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <h1>AirText 公式一斉送信パネル</h1>
+    <textarea id="broadcastText" placeholder="全ユーザーに送信するメッセージを入力してください..."></textarea>
+    <button id="sendBtn" onclick="sendBroadcast()">一斉送信を実行</button>
+    <div class="status" id="statusBox"></div>
+</div>
+
+<script>
+    // アプリ本体（index.html 4）と同じFirebase設定
+    var firebaseConfig = {
+        apiKey: "AIzaSyAFxMMoJ6q0pQqRimkJaY6eDyBWgLqaNWc",
+        authDomain: "airtext-mirboy.firebaseapp.com",
+        projectId: "airtext-mirboy",
+        storageBucket: "airtext-mirboy.firebasestorage.app",
+        messagingSenderId: "1091018853143",
+        appId: "1:1091018853143:web:c1ed8f39e4886656800552"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    var db = firebase.firestore();
+
+    // 公式アカウントのメールアドレス
+    var OFFICIAL_EMAIL = "official@airtext.com"; 
+
+    function sendBroadcast() {
+        var text = document.getElementById('broadcastText').value.trim();
+        var btn = document.getElementById('sendBtn');
+        var status = document.getElementById('statusBox');
+
+        if (!text) return alert("メッセージを入力してください。");
+        if (!confirm("本当に全ユーザーへ送信しますか？\n※取り消しはできません。")) return;
+
+        btn.disabled = true;
+        status.innerText = "ユーザー一覧を取得中...";
+
+        // 1. 全ユーザーのプロフィール情報を取得
+        db.collection("profiles").get().then(function(querySnapshot) {
+            var totalUsers = querySnapshot.size;
+            var sentCount = 0;
+
+            if (totalUsers === 0) {
+                status.innerText = "配信対象のユーザーが見つかりませんでした。";
+                btn.disabled = false;
+                return;
+            }
+
+            querySnapshot.forEach(function(doc) {
+                var userEmail = doc.id;
+                
+                // 公式アカウント自身には送信しない
+                if (userEmail === OFFICIAL_EMAIL) {
+                    sentCount++;
+                    checkComplete(sentCount, totalUsers);
+                    return;
+                }
+
+                // 2. 各ユーザーとのトークルームIDを生成
+                var roomId = [userEmail, OFFICIAL_EMAIL].sort().join("_");
+
+                // 3. メッセージを送信
+                db.collection("rooms").doc(roomId).collection("messages").add({
+                    text: text,
+                    sender: OFFICIAL_EMAIL,
+                    time: Date.now(),
+                    msgType: "text",
+                    isRead: false,
+                    reactions: {}
+                }).then(function() {
+                    // 4. 新着バッジの通知ステータスを更新
+                    return db.collection("room_status").doc(roomId).set({
+                        unread: userEmail
+                    }, { merge: true });
+                }).then(function() {
+                    sentCount++;
+                    status.innerText = "送信中... (" + sentCount + "/" + totalUsers + ")";
+                    checkComplete(sentCount, totalUsers);
+                }).catch(function(err) {
+                    console.error("送信エラー (" + userEmail + "): ", err);
+                    sentCount++;
+                    checkComplete(sentCount, totalUsers);
+                });
+            });
+        }).catch(function(err) {
+            alert("エラーが発生しました: " + err.message);
+            btn.disabled = false;
+        });
+
+        function checkComplete(current, total) {
+            if (current >= total) {
+                status.innerText = "一斉送信が完了しました！";
+                document.getElementById('broadcastText').value = "";
+                btn.disabled = false;
+            }
+        }
+    }
+</script>
+</body>
+</html>
