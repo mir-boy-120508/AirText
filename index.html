@@ -51,13 +51,13 @@
         /* メモ情報（時間・既読） */
         .msg-meta { font-size: 11px; color: #8e8e93; margin-top: 2px; display: flex; gap: 5px; }
         
-        /* リアクションバッジ（絵文字進化版） */
+        /* リアクションバッジ */
         .heart-badge { position: absolute; bottom: -8px; background: white; border: 1px solid #e5e5ea; border-radius: 10px; padding: 1px 5px; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); pointer-events: none; display: flex; gap: 2px; }
         .sent .heart-badge { right: 10px; }
         .received .heart-badge { left: 10px; }
 
-        /* 長押しメニュー（リアクション選択・送信取消用） */
-        #msgMenu { display: none; position: fixed; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 20px; box-shadow: 0 5px 25px rgba(0,0,0,0.15); padding: 8px; z-index: 9999; flex-direction: column; width: 220px; box-sizing: border-box; }
+        /* 長押しメニュー（iOS 10 Safari 互換対応） */
+        #msgMenu { display: none; position: fixed; background: rgba(255,255,255,0.95); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-radius: 20px; box-shadow: 0 5px 25px rgba(0,0,0,0.15); padding: 8px; z-index: 9999; flex-direction: column; width: 220px; box-sizing: border-box; }
         .emoji-row { display: flex; justify-content: space-around; padding-bottom: 8px; border-bottom: 1px solid #eee; margin-bottom: 5px; }
         .emoji-opt { font-size: 24px; cursor: pointer; transition: transform 0.1s; padding: 4px; }
         .emoji-opt:active { transform: scale(1.3); }
@@ -114,7 +114,6 @@
     <div class="input-bar">
         <button class="icon-btn" id="clipBtn" style="font-size: 20px; padding: 0 5px;">📎</button>
         <input type="file" id="imageFileInput" accept="image/*" style="display:none;">
-        
         <input type="text" id="msgInput" placeholder="メッセージ">
         <button id="sendBtn" style="background:#007aff; color:white; border:none; width:40px; height:40px; border-radius:50%; margin-left:2px; font-size:20px; cursor:pointer;">↑</button>
     </div>
@@ -162,7 +161,7 @@
     firebase.initializeApp(firebaseConfig);
     var db = firebase.firestore();
     var auth = firebase.auth();
-    var storage = firebase.storage(); // ストレージ有効化
+    var storage = firebase.storage();
 
     var me = null, targetEmail = null, chatUnsub = null, statusUnsub = null;
     var myName = "", myAvatar = "";
@@ -172,8 +171,8 @@
     var activeRoomId = null;
     var isGroupMode = false;
     var focusedMsgId = null;
+    var selectedAvatarFile = null; // 選択された画像ファイルを保持する変数
 
-    // URLを自動リンク化する関数
     function activateLinks(text) {
         var urlRegex = /(https?:\/\/[^\s]+)/g;
         return text.replace(urlRegex, function(url) {
@@ -271,19 +270,43 @@
     document.getElementById('toSettingsBtn').onclick = function() { show('settingsView'); };
     document.getElementById('backFromSettings').onclick = function() { show('homeView'); };
 
+    // 画面上のプレビュー処理（メモリ負荷を避けるため選択ファイルのみ記憶）
     document.getElementById('avatarInput').onchange = function(e) {
-        var reader = new FileReader();
-        reader.onload = function() { document.getElementById('myAvatarPreview').src = reader.result; };
-        if (e.target.files[0]) reader.readAsDataURL(e.target.files[0]);
+        var file = e.target.files[0];
+        if (file) {
+            selectedAvatarFile = file;
+            var reader = new FileReader();
+            reader.onload = function() { document.getElementById('myAvatarPreview').src = reader.result; };
+            reader.readAsDataURL(file);
+        }
     };
 
+    // プロフィール保存処理（Firebase Storageを介してURL保存する安全設計に修正）
     document.getElementById('saveSettingsBtn').onclick = function() {
         var name = document.getElementById('nicknameInput').value.trim();
-        var avatar = document.getElementById('myAvatarPreview').src;
-        db.collection("profiles").doc(me.email).set({ name: name, avatar: avatar.indexOf('data') === 0 ? avatar : myAvatar }, { merge: true }).then(function() {
-            alert("プロフィールを保存しました");
-            show('homeView');
-        });
+        
+        if (selectedAvatarFile) {
+            // 新しい画像が選択されている場合は、先にStorageへアップロード
+            var storageRef = storage.ref('avatars/' + me.email + '_' + Date.now() + '_' + selectedAvatarFile.name);
+            storageRef.put(selectedAvatarFile).then(function(snapshot) {
+                return snapshot.ref.getDownloadURL();
+            }).then(function(downloadURL) {
+                myAvatar = downloadURL; // 新しいURLに更新
+                selectedAvatarFile = null; // リセット
+                return db.collection("profiles").doc(me.email).set({ name: name, avatar: myAvatar }, { merge: true });
+            }).then(function() {
+                alert("プロフィールを保存しました");
+                show('homeView');
+            }).catch(function(err) {
+                alert("プロフィールの保存に失敗しました: " + err.message);
+            });
+        } else {
+            // 画像が変更されていない場合はFirestoreのみ更新
+            db.collection("profiles").doc(me.email).set({ name: name, avatar: myAvatar }, { merge: true }).then(function() {
+                alert("プロフィールを保存しました");
+                show('homeView');
+            });
+        }
     };
 
     // 1対1の友達追加
@@ -338,7 +361,6 @@
                 item.innerHTML = '<div class="avatar" id="av-'+safeId+'">' + (isGroup ? "👥" : displayTitle[0].toUpperCase()) + '</div><div style="font-weight:bold;" id="name-'+safeId+'">' + displayTitle + '</div>';
                 
                 if (!isGroup) {
-                    // 相手の登録プロフィール名
                     db.collection("profiles").doc(other).onSnapshot(function(pSnap) {
                         var pData = pSnap.data();
                         if (pData) {
@@ -346,7 +368,6 @@
                             if (pData.avatar && avEl) { avEl.innerHTML = ""; var img = document.createElement('img'); img.src = pData.avatar; img.className="avatar"; img.style.margin="0"; avEl.appendChild(img); }
                         }
                     });
-                    // 自分専用の相手の呼び方（ニックネーム）を読み込み
                     db.collection("my_nicknames").doc(me.email).collection("targets").doc(other).onSnapshot(function(nSnap) {
                         var nmEl = document.getElementById('name-'+safeId);
                         if(nmEl) {
@@ -369,7 +390,6 @@
                         }
                     } else { if (b) b.remove(); }
                 });
-
                 item.onclick = function() { openChat(roomId, isGroup, other, data.groupName); };
                 list.appendChild(item);
             });
@@ -377,7 +397,7 @@
         });
     }
 
-function openChat(roomId, isGroup, otherEmail, groupName) {
+    function openChat(roomId, isGroup, otherEmail, groupName) {
         activeRoomId = roomId;
         isGroupMode = isGroup;
         targetEmail = isGroup ? null : otherEmail;
@@ -386,23 +406,17 @@ function openChat(roomId, isGroup, otherEmail, groupName) {
         if(isGroup) {
             titleEl.innerText = "[グループ] " + groupName;
         } else {
-            // 初期値として、まずは相手のメールアドレスをセットしておきます
             titleEl.innerText = targetEmail;
-            
-            // 自分専用の相手の呼び名（ニックネーム）が登録されていれば、それのみで上書きします
             db.collection("my_nicknames").doc(me.email).collection("targets").doc(targetEmail).onSnapshot(function(nSnap) {
                 if(nSnap.exists && nSnap.data().alias) {
-                    titleEl.innerText = nSnap.data().alias; // ← 「+ " (" + targetEmail + ")"」を削除しました
+                    titleEl.innerText = nSnap.data().alias;
                 }
             });
         }
         
         show('chatView');
-        
-        // 呼び名変更機能（ヘッダーの名前タップ）
         titleEl.onclick = function() {
             if(isGroupMode) return;
-            // メアドの結合がなくなったため、現在の表示名をそのまま初期値として渡せます
             var currentAlias = titleEl.innerText;
             var newAlias = prompt("この相手のあなた専用の呼び名（お母さん、妹など）を入力してください:", currentAlias);
             if(newAlias !== null) {
@@ -410,9 +424,7 @@ function openChat(roomId, isGroup, otherEmail, groupName) {
             }
         };
     
-        // 既読フラグ管理
         db.collection("room_status").doc(activeRoomId).set({ unread: "", current_users: firebase.firestore.FieldValue.arrayUnion(me.email) }, { merge: true });
-
         if(!isGroupMode) {
             if(statusUnsub) statusUnsub();
             statusUnsub = db.collection("room_status").doc(activeRoomId).onSnapshot(function(docSnap) {
@@ -443,14 +455,12 @@ function openChat(roomId, isGroup, otherEmail, groupName) {
                 var m = document.createElement('div');
                 m.className = "msg";
                 
-                // 写真かテキストかの判定・URL自動リンク処理
                 if(data.msgType === "image") {
                     m.innerHTML = (isGroupMode ? '<div style="font-size:10px;color:#888;margin-bottom:4px;">'+data.sender+'</div>':'') + '<img src="'+data.url+'">';
                 } else {
                     m.innerHTML = (isGroupMode ? '<div style="font-size:10px;color:#888;margin-bottom:4px;">'+data.sender+'</div>':'') + activateLinks(data.text);
                 }
                 
-                // スマホ長押し & PC右クリックメニューの合体
                 var pressTimer;
                 m.addEventListener('touchstart', function(e) {
                     pressTimer = setTimeout(function() {
@@ -463,7 +473,6 @@ function openChat(roomId, isGroup, otherEmail, groupName) {
                     popupMenu(e.clientX, e.clientY, msgId, isMe);
                 });
 
-                // メタ情報（時間・既読）
                 var meta = document.createElement('div');
                 meta.className = "msg-meta";
                 var timeStr = formatTime(data.time);
@@ -481,7 +490,6 @@ function openChat(roomId, isGroup, otherEmail, groupName) {
                     }
                 }
 
-                // 絵文字リアクションバッジ（複数スタンプ対応）
                 var heartBadge = document.createElement('div');
                 heartBadge.className = "heart-badge";
                 
@@ -509,26 +517,21 @@ function openChat(roomId, isGroup, otherEmail, groupName) {
         });
     }
 
-    // 長押しメニューの表示
     function popupMenu(x, y, msgId, isMe) {
         focusedMsgId = msgId;
         var menu = document.getElementById('msgMenu');
         menu.style.display = 'flex';
         menu.style.left = Math.min(x, window.innerWidth - 230) + 'px';
         menu.style.top = Math.min(y, window.innerHeight - 150) + 'px';
-        
-        // 送信取消ボタンは自分のメッセージの時だけ表示
         document.getElementById('revokeBtn').style.display = isMe ? 'block' : 'none';
     }
 
-    // メニュー外タップで閉じる
     document.addEventListener('click', function(e) {
         if(!e.target.closest('#msgMenu') && !e.target.closest('.msg')) {
             document.getElementById('msgMenu').style.display = 'none';
         }
     });
 
-    // 絵文字リアクションをタップしたときの処理
     var emojiOpts = document.querySelectorAll('.emoji-opt');
     for(var i=0; i<emojiOpts.length; i++) {
         emojiOpts[i].onclick = function(e) {
@@ -542,10 +545,8 @@ function openChat(roomId, isGroup, otherEmail, groupName) {
                     if(!rMap[chosenEmoji]) rMap[chosenEmoji] = [];
                     
                     if(rMap[chosenEmoji].includes(me.email)) {
-                        // 既についてたら外す
                         rMap[chosenEmoji] = rMap[chosenEmoji].filter(function(u) { return u !== me.email; });
                     } else {
-                        // ついてなければ追加
                         rMap[chosenEmoji].push(me.email);
                     }
                     transaction.update(msgRef, { reactions: rMap });
@@ -556,7 +557,6 @@ function openChat(roomId, isGroup, otherEmail, groupName) {
         };
     }
 
-    // 送信取り消し（データ完全消去）
     document.getElementById('revokeBtn').onclick = function() {
         if(confirm("このメッセージの送信を取り消しますか？\n（お互いの画面から完全に消去されます）")) {
             db.collection("rooms").doc(activeRoomId).collection("messages").doc(focusedMsgId).delete().then(function() {
@@ -570,7 +570,6 @@ function openChat(roomId, isGroup, otherEmail, groupName) {
         db.collection("room_status").doc(activeRoomId).set({
             current_users: firebase.firestore.FieldValue.arrayRemove(me.email)
         }, { merge: true });
-        
         targetEmail = null;
         activeRoomId = null;
         show('homeView');
@@ -595,13 +594,11 @@ function openChat(roomId, isGroup, otherEmail, groupName) {
             if (!partnerInRoom && !isGroupMode) {
                 db.collection("room_status").doc(activeRoomId).set({ unread: targetEmail }, { merge: true });
             } else if (isGroupMode) {
-                // グループの場合は自分以外の全員に新着通知（簡易版）
                 db.collection("room_status").doc(activeRoomId).set({ unread: "group_update" }, { merge: true });
             }
         });
     }
 
-    // 写真送信ボタン処理
     document.getElementById('clipBtn').onclick = function() {
         document.getElementById('imageFileInput').click();
     };
@@ -609,14 +606,10 @@ function openChat(roomId, isGroup, otherEmail, groupName) {
     document.getElementById('imageFileInput').onchange = function(e) {
         var file = e.target.files[0];
         if(!file) return;
-
         var storageRef = storage.ref('airtext_photos/' + activeRoomId + '/' + Date.now() + '_' + file.name);
-        
-        // アップロード開始
         storageRef.put(file).then(function(snapshot) {
             return snapshot.ref.getDownloadURL();
         }).then(function(downloadURL) {
-            // 画像メッセージとしてFirestoreに書き込み
             var msgData = {
                 url: downloadURL,
                 sender: me.email,
