@@ -377,7 +377,7 @@
         });
     }
 
-    function openChat(roomId, isGroup, otherEmail, groupName) {
+function openChat(roomId, isGroup, otherEmail, groupName) {
         activeRoomId = roomId;
         isGroupMode = isGroup;
         targetEmail = isGroup ? null : otherEmail;
@@ -386,11 +386,13 @@
         if(isGroup) {
             titleEl.innerText = "[グループ] " + groupName;
         } else {
+            // 初期値として、まずは相手のメールアドレスをセットしておきます
             titleEl.innerText = targetEmail;
-            // 自分専用の相手の呼び方を反映
+            
+            // 自分専用の相手の呼び名（ニックネーム）が登録されていれば、それのみで上書きします
             db.collection("my_nicknames").doc(me.email).collection("targets").doc(targetEmail).onSnapshot(function(nSnap) {
                 if(nSnap.exists && nSnap.data().alias) {
-                    titleEl.innerText = nSnap.data().alias + " (" + targetEmail + ")";
+                    titleEl.innerText = nSnap.data().alias; // ← 「+ " (" + targetEmail + ")"」を削除しました
                 }
             });
         }
@@ -400,13 +402,14 @@
         // 呼び名変更機能（ヘッダーの名前タップ）
         titleEl.onclick = function() {
             if(isGroupMode) return;
-            var currentAlias = titleEl.innerText.split(" (")[0];
+            // メアドの結合がなくなったため、現在の表示名をそのまま初期値として渡せます
+            var currentAlias = titleEl.innerText;
             var newAlias = prompt("この相手のあなた専用の呼び名（お母さん、妹など）を入力してください:", currentAlias);
             if(newAlias !== null) {
                 db.collection("my_nicknames").doc(me.email).collection("targets").doc(targetEmail).set({ alias: newAlias.trim() });
             }
         };
-
+    
         // 既読フラグ管理
         db.collection("room_status").doc(activeRoomId).set({ unread: "", current_users: firebase.firestore.FieldValue.arrayUnion(me.email) }, { merge: true });
 
