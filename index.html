@@ -37,10 +37,22 @@
         .chat-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; height: 60px; box-sizing: border-box; }
         .message-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; background: #fff; }
         
-        /* 改行や長文の段落を綺麗に反映させるためのスタイル */
-        .msg { max-width: 75%; padding: 12px 16px; border-radius: 20px; margin-bottom: 8px; font-size: 16px; line-height: 1.5; word-wrap: break-word; white-space: pre-wrap; }
-        .sent { background: #007aff; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
-        .received { background: #e5e5ea; color: black; align-self: flex-start; border-bottom-left-radius: 4px; }
+        /* メッセージコンテナと吹き出し */
+        .msg-container { max-width: 75%; margin-bottom: 12px; display: flex; flex-direction: column; position: relative; }
+        .msg-container.sent { align-self: flex-end; align-items: flex-end; }
+        .msg-container.received { align-self: flex-start; align-items: flex-start; }
+        
+        .msg { padding: 12px 16px; border-radius: 20px; font-size: 16px; line-height: 1.5; word-wrap: break-word; white-space: pre-wrap; user-select: none; -webkit-user-select: none; cursor: pointer; }
+        .sent .msg { background: #007aff; color: white; border-bottom-right-radius: 4px; }
+        .received .msg { background: #e5e5ea; color: black; border-bottom-left-radius: 4px; }
+        
+        /* メモ情報（時間・既読） */
+        .msg-meta { font-size: 11px; color: #8e8e93; margin-top: 2px; display: flex; gap: 5px; }
+        
+        /* ❤️リアクションバッジ */
+        .heart-badge { position: absolute; bottom: -8px; background: white; border: 1px solid #e5e5ea; border-radius: 10px; padding: 1px 4px; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); pointer-events: none; display: none; }
+        .sent .heart-badge { right: 10px; }
+        .received .heart-badge { left: 10px; }
         
         .input-bar { padding: 10px 15px; display: flex; background: white; border-top: 1px solid #ddd; align-items: center; height: 60px; box-sizing: border-box; }
         .input-bar input[type="text"] { flex: 1; padding: 12px 18px; border: 1px solid #ddd; border-radius: 25px; outline: none; font-size: 16px; -webkit-appearance: none; }
@@ -128,14 +140,13 @@
     var db = firebase.firestore();
     var auth = firebase.auth();
 
-    // ★ここに取得したGeminiのAPIキーを貼り付ける★
-    var GEMINI_API_KEY = "AQ.Ab8RN6K0DdUp0lRTdqVHbXsorh_LOaxzFvs4i2oaJjuKp1p9hg";
+    var GEMINI_API_KEY = "★ここに取得したGeminiのAPIキーを貼り付ける★";
 
-    var me = null, targetEmail = null, chatUnsub = null;
+    var me = null, targetEmail = null, chatUnsub = null, statusUnsub = null;
     var myName = "", myAvatar = "";
     var isSignUpMode = false;
     var audioCtx = null;
-    var currentChatMessages = [];
+    var partnerInRoom = false; // 相手が部屋にいるかどうか
 
     function playNotificationSound() {
         try {
@@ -153,6 +164,14 @@
         } catch(e) {}
     }
 
+    function formatTime(timestamp) {
+        if (!timestamp) return "";
+        var d = new Date(timestamp);
+        var hr = String(d.getHours()).padStart(2, '0');
+        var min = String(d.getMinutes()).padStart(2, '0');
+        return hr + ":" + min;
+    }
+
     function show(id) {
         var views = ['loginView', 'homeView', 'chatView', 'settingsView'];
         for (var i = 0; i < views.length; i++) {
@@ -163,13 +182,11 @@
         if (target) { target.style.display = 'flex'; }
     }
 
-    // Googleログイン
     document.getElementById('googleLoginBtn').onclick = function() {
         var provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithRedirect(provider);
     };
 
-    // モード切り替え
     document.getElementById('switchAuthMode').onclick = function() {
         isSignUpMode = !isSignUpMode;
         if (isSignUpMode) {
@@ -249,11 +266,7 @@
             var list = document.getElementById('contactList');
             list.innerHTML = "";
 
-            var geminiItem = document.createElement('div');
-            geminiItem.className = "contact-item";
-            geminiItem.innerHTML = '<div class="avatar" style="background:#6840d4;">🤖</div><div style="font-weight:bold;">Gemini AI</div>';
-            geminiItem.onclick = function() { openChat("gemini-ai-bot"); };
-            list.appendChild(geminiItem);
+            // 🛠️ 提案通り、Gemini AIの案内枠（Bot）を一旦ここから完全に非表示にしました
 
             snap.forEach(function(d) {
                 var users = d.data().users;
@@ -294,42 +307,118 @@
     }
 
     function getRoomId(target) {
-        var safeMyId = me.email.replace(/[^a-zA-Z0-9]/g, "");
-        if (target === "gemini-ai-bot") {
-            return "room_with_" + safeMyId + "_gemini";
-        } else {
-            return [me.email, target].sort().join("_");
-        }
+        return [me.email, target].sort().join("_");
     }
 
     function openChat(email) {
         targetEmail = email;
-        document.getElementById('chatTitle').innerText = (email === "gemini-ai-bot") ? "Gemini AI" : targetEmail;
+        document.getElementById('chatTitle').innerText = targetEmail;
         show('chatView');
         
         var roomId = getRoomId(targetEmail);
         
-        if (email !== "gemini-ai-bot") {
-            db.collection("room_status").doc(roomId).set({ unread: "" }, { merge: true });
-        }
+        // 既読機能用：自分がこの部屋を開いた状態にセット
+        db.collection("room_status").doc(roomId).set({ unread: "", current_users: firebase.firestore.FieldValue.arrayUnion(me.email) }, { merge: true });
+
+        // 相手がこの部屋を開いているかをリアルタイム監視
+        if(statusUnsub) statusUnsub();
+        statusUnsub = db.collection("room_status").doc(roomId).onSnapshot(function(docSnap) {
+            var status = docSnap.data();
+            if (status && status.current_users && status.current_users.includes(targetEmail)) {
+                partnerInRoom = true;
+            } else {
+                partnerInRoom = false;
+            }
+        });
 
         if (chatUnsub) chatUnsub();
         chatUnsub = db.collection("rooms").doc(roomId).collection("messages").orderBy("time", "asc").onSnapshot(function(snap) {
             var area = document.getElementById('msgArea');
             area.innerHTML = "";
-            currentChatMessages = [];
             
             snap.forEach(function(d) {
                 var data = d.data();
-                currentChatMessages.push(data);
+                var msgId = d.id;
+                var isMe = (data.sender === me.email);
                 
+                // メッセージを包むコンテナ
+                var container = document.createElement('div');
+                container.className = "msg-container " + (isMe ? 'sent' : 'received');
+                
+                // 吹き出し本体
                 var m = document.createElement('div');
-                m.className = "msg " + (data.sender === me.email ? 'sent' : 'received');
+                m.className = "msg";
                 m.innerText = data.text;
-                area.appendChild(m);
+                
+                // ダブルタップ（トントン）で❤️をつける・外す機能
+                var lastTap = 0;
+                m.addEventListener('touchend', function(e) {
+                    var now = Date.now();
+                    if (now - lastTap < 300) {
+                        toggleHeart(roomId, msgId, data.heart);
+                    }
+                    lastTap = now;
+                });
+                m.addEventListener('dblclick', function(e) {
+                    toggleHeart(roomId, msgId, data.heart);
+                });
+
+                // 時間と既読用のメタ情報エリア
+                var meta = document.createElement('div');
+                meta.className = "msg-meta";
+                var timeStr = formatTime(data.time);
+                
+                if (isMe) {
+                    // 自分が送ったメッセージの場合：相手が部屋にいるか、または既にメッセージが既読状態なら「既読」と出す
+                    var readText = (partnerInRoom || data.isRead) ? "既読 " : "";
+                    meta.innerText = readText + timeStr;
+                    // 同期のためにデータベース上の未読フラグも更新
+                    if (partnerInRoom && !data.isRead) {
+                        db.collection("rooms").doc(roomId).collection("messages").doc(msgId).update({ isRead: true });
+                    }
+                } else {
+                    // 相手から届いたメッセージの場合：時間だけ表示
+                    meta.innerText = timeStr;
+                    // 自分が今部屋を開いているので自動的に既読にする
+                    if (!data.isRead) {
+                        db.collection("rooms").doc(roomId).collection("messages").doc(msgId).update({ isRead: true });
+                    }
+                }
+
+                // ❤️バッジ
+                var heartBadge = document.createElement('div');
+                heartBadge.className = "heart-badge";
+                heartBadge.innerText = "❤️";
+                if (data.heart) {
+                    heartBadge.style.display = "block";
+                }
+
+                container.appendChild(m);
+                container.appendChild(heartBadge);
+                container.appendChild(meta);
+                area.appendChild(container);
             });
             area.scrollTop = area.scrollHeight;
         });
+    }
+
+    // ❤️をつけたり消したりする関数
+    function toggleHeart(roomId, msgId, currentStatus) {
+        db.collection("rooms").doc(roomId).collection("messages").doc(msgId).update({
+            heart: !currentStatus
+        });
+    }
+
+    function closeChat() {
+        if (!targetEmail) return;
+        var roomId = getRoomId(targetEmail);
+        // 画面を離れるときは、部屋にいるユーザー一覧から自分を抜く
+        db.collection("room_status").doc(roomId).set({
+            current_users: firebase.firestore.FieldValue.arrayRemove(me.email)
+        }, { merge: true });
+        
+        targetEmail = null;
+        show('homeView');
     }
 
     function send() {
@@ -337,95 +426,29 @@
         var text = input.value.trim();
         if (!text || !targetEmail) return;
 
-        var isGemini = (targetEmail === "gemini-ai-bot");
         var roomId = getRoomId(targetEmail);
         
         var msgData = {
             text: text,
             sender: me.email,
             time: Date.now(),
-            type: "text"
+            type: "text",
+            isRead: partnerInRoom, // 送った瞬間に相手が部屋にいたら最初から既読にする
+            heart: false // 初期状態は❤️なし
         };
 
         input.value = "";
 
         db.collection("rooms").doc(roomId).collection("messages").add(msgData).then(function() {
-            if (isGemini) {
-                talkToGemini(roomId);
-            } else {
+            if (!partnerInRoom) {
                 db.collection("room_status").doc(roomId).set({ unread: targetEmail }, { merge: true });
             }
         });
     }
 
-    function talkToGemini(roomId) {
-        if (!GEMINI_API_KEY || GEMINI_API_KEY.indexOf("★") !== -1) {
-            saveBotMessage("APIキーを設定してください！", roomId);
-            return;
-        }
-
-        // 安定して動作する通常のエンドポイントURLを使用
-        var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + GEMINI_API_KEY;
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", url, true);
-        xhr.setRequestHeader("Content-Type", "application/json");
-
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4) {
-                if (xhr.status === 200) {
-                    try {
-                        var res = JSON.parse(xhr.responseText);
-                        var reply = res.candidates[0].content.parts[0].text;
-                        saveBotMessage(reply, roomId);
-                    } catch(e) {
-                        saveBotMessage("解析エラーが発生しました。内容: " + e.message, roomId);
-                    }
-                } else {
-                    alert("Gemini通信失敗詳細:\nステータスコード: " + xhr.status + "\nレスポンス: " + xhr.responseText);
-                    saveBotMessage("通信エラーが発生しました。", roomId);
-                }
-            }
-        };
-
-        var contentsArray = [];
-        var startIdx = Math.max(0, currentChatMessages.length - 15);
-        for (var i = startIdx; i < currentChatMessages.length; i++) {
-            var msg = currentChatMessages[i];
-            var role = (msg.sender === me.email) ? "user" : "model";
-            contentsArray.push({
-                role: role,
-                parts: [{ text: msg.text }]
-            });
-        }
-
-        // 🛠️ 修正ポイント：無料プランで安定して動作しつつ、段落分けを多く使って詳しく長文で返す指示
-        var systemInstruction = "【システム指示】あなたは丁寧で非常に優秀なGoogleのAIアシスタント「Gemini」です。これまでの会話の流れをしっかり踏まえ、詳しく中身のある解説を日本語（敬語）で行ってください。文字数の制限は一切ありません。トピックごとにきれいに段落を分け、見出しや箇条書きなどを駆使して、いつもの公式Web版Geminiのような読み応えのある構成でスマートに出力してください。";
-        
-        if (contentsArray.length > 0 && contentsArray[contentsArray.length - 1].role === "user") {
-            contentsArray[contentsArray.length - 1].parts[0].text += " (" + systemInstruction + ")";
-        }
-
-        // エラーを避けるため、tools（Google検索機能）を外してシンプルなリクエストに修正
-        var requestBody = JSON.stringify({
-            contents: contentsArray
-        });
-        xhr.send(requestBody);
-    }
-
-    function saveBotMessage(botText, roomId) {
-        db.collection("rooms").doc(roomId).collection("messages").add({
-            text: botText,
-            sender: "gemini-ai-bot",
-            time: Date.now(),
-            type: "text"
-        }).then(function() {
-            playNotificationSound();
-        });
-    }
-
     document.getElementById('sendBtn').onclick = send;
     document.getElementById('msgInput').onkeypress = function(e) { if (e.key === 'Enter' || e.keyCode === 13) send(); };
-    document.getElementById('backBtn').onclick = function() { show('homeView'); };
+    document.getElementById('backBtn').onclick = closeChat;
 </script>
 </body>
 </html>
