@@ -171,7 +171,7 @@
     var activeRoomId = null;
     var isGroupMode = false;
     var focusedMsgId = null;
-    var selectedAvatarFile = null; // 選択された画像ファイルを保持する変数
+    var selectedAvatarFile = null;
 
     function activateLinks(text) {
         var urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -270,7 +270,6 @@
     document.getElementById('toSettingsBtn').onclick = function() { show('settingsView'); };
     document.getElementById('backFromSettings').onclick = function() { show('homeView'); };
 
-    // 画面上のプレビュー処理（メモリ負荷を避けるため選択ファイルのみ記憶）
     document.getElementById('avatarInput').onchange = function(e) {
         var file = e.target.files[0];
         if (file) {
@@ -281,18 +280,16 @@
         }
     };
 
-    // プロフィール保存処理（Firebase Storageを介してURL保存する安全設計に修正）
     document.getElementById('saveSettingsBtn').onclick = function() {
         var name = document.getElementById('nicknameInput').value.trim();
         
         if (selectedAvatarFile) {
-            // 新しい画像が選択されている場合は、先にStorageへアップロード
             var storageRef = storage.ref('avatars/' + me.email + '_' + Date.now() + '_' + selectedAvatarFile.name);
             storageRef.put(selectedAvatarFile).then(function(snapshot) {
                 return snapshot.ref.getDownloadURL();
             }).then(function(downloadURL) {
-                myAvatar = downloadURL; // 新しいURLに更新
-                selectedAvatarFile = null; // リセット
+                myAvatar = downloadURL;
+                selectedAvatarFile = null;
                 return db.collection("profiles").doc(me.email).set({ name: name, avatar: myAvatar }, { merge: true });
             }).then(function() {
                 alert("プロフィールを保存しました");
@@ -301,7 +298,6 @@
                 alert("プロフィールの保存に失敗しました: " + err.message);
             });
         } else {
-            // 画像が変更されていない場合はFirestoreのみ更新
             db.collection("profiles").doc(me.email).set({ name: name, avatar: myAvatar }, { merge: true }).then(function() {
                 alert("プロフィールを保存しました");
                 show('homeView');
@@ -309,7 +305,6 @@
         }
     };
 
-    // 1対1の友達追加
     document.getElementById('addBtn').onclick = function() {
         var mail = prompt("追加する相手のメールアドレスを入力:");
         if (!mail || mail === me.email) return;
@@ -317,7 +312,6 @@
         db.collection("contact_links").doc(linkId).set({ users: [me.email, mail], type: "direct", time: Date.now() });
     };
 
-    // グループ作成ボタン
     document.getElementById('makeGroupBtn').onclick = function() {
         var gName = prompt("作成するグループ名を入力してください:");
         if(!gName) return;
@@ -418,7 +412,7 @@
         titleEl.onclick = function() {
             if(isGroupMode) return;
             var currentAlias = titleEl.innerText;
-            var newAlias = prompt("この相手のあなた専用の呼び名（お母さん、妹など）を入力してください:", currentAlias);
+            var newAlias = prompt("この相手のあなた専用の呼び名を入力してください:", currentAlias);
             if(newAlias !== null) {
                 db.collection("my_nicknames").doc(me.email).collection("targets").doc(targetEmail).set({ alias: newAlias.trim() });
             }
@@ -449,6 +443,13 @@
                 var msgId = d.id;
                 var isMe = (data.sender === me.email);
                 
+                // 【既読ロジック修正点①】
+                // 自分が「開いている」時、相手から届いた未読のメッセージ（受信メッセージ）だけを既読に更新する。
+                // 自分が送信したメッセージは、ここでは勝手に既読（isRead: true）にしない。
+                if (!isMe && !data.isRead) {
+                    db.collection("rooms").doc(activeRoomId).collection("messages").doc(msgId).update({ isRead: true });
+                }
+
                 var container = document.createElement('div');
                 container.className = "msg-container " + (isMe ? 'sent' : 'received');
                 
@@ -477,17 +478,14 @@
                 meta.className = "msg-meta";
                 var timeStr = formatTime(data.time);
                 
+                // 【既読ロジック修正点②】
+                // 「自分が送信したメッセージ」かつ「Firestore上のデータがisRead: trueになっている」場合のみ
+                // 画面上に「既読」という文字を表示させる。
                 if (isMe) {
-                    var readText = (partnerInRoom || data.isRead) ? "既読 " : "";
+                    var readText = data.isRead ? "既読 " : "";
                     meta.innerText = (isGroupMode ? "" : readText) + timeStr;
-                    if (partnerInRoom && !data.isRead) {
-                        db.collection("rooms").doc(activeRoomId).collection("messages").doc(msgId).update({ isRead: true });
-                    }
                 } else {
                     meta.innerText = timeStr;
-                    if (!data.isRead) {
-                        db.collection("rooms").doc(activeRoomId).collection("messages").doc(msgId).update({ isRead: true });
-                    }
                 }
 
                 var heartBadge = document.createElement('div');
@@ -558,7 +556,7 @@
     }
 
     document.getElementById('revokeBtn').onclick = function() {
-        if(confirm("このメッセージの送信を取り消しますか？\n（お互いの画面から完全に消去されます）")) {
+        if(confirm("このメッセージの送信を取り消しますか？")) {
             db.collection("rooms").doc(activeRoomId).collection("messages").doc(focusedMsgId).delete().then(function() {
                 document.getElementById('msgMenu').style.display = 'none';
             });
@@ -580,6 +578,9 @@
         var text = input.value.trim();
         if (!text || !activeRoomId) return;
 
+        // 【既読ロジック修正点③】
+        // 送信する瞬間、相手が同じ部屋にいる（partnerInRoomがtrue）なら最初からisReadをtrueにし、
+        // 相手が部屋にいないなら未読（false）の状態で登録する。
         var msgData = {
             text: text,
             sender: me.email,
@@ -610,6 +611,7 @@
         storageRef.put(file).then(function(snapshot) {
             return snapshot.ref.getDownloadURL();
         }).then(function(downloadURL) {
+            // 【既読ロジック修正点④】画像送信もテキストと同様に
             var msgData = {
                 url: downloadURL,
                 sender: me.email,
