@@ -648,6 +648,23 @@
         document.getElementById('sendBtn').onclick = send;
         document.getElementById('msgInput').onkeypress = (e) => { if (e.key === 'Enter') send(); };
         document.getElementById('backBtn').onclick = closeChat;
+        // 【追加】設定画面のログアウトボタンを押したときの処理
+    document.getElementById('logoutBtn').onclick = function() {
+        if (confirm("ログアウトしますか？")) {
+            auth.signOut().then(function() {
+                alert("ログアウトしました");
+                // ログインチャットの購読や状態を初期化
+                if (chatUnsub) chatUnsub();
+                if (statusUnsub) statusUnsub();
+                activeRoomId = null;
+                targetEmail = null;
+                // 画面をログイン画面に強制移動
+                show('loginView');
+            }).catch(function(error) {
+                alert("ログアウトに失敗しました: " + error.message);
+            });
+        }
+    };
     </script>
 </head>
 <body>
@@ -709,7 +726,9 @@
         </label>
         <input type="file" id="avatarInput" accept="image/*" style="display:none;">
         <input type="text" id="nicknameInput" placeholder="ニックネームを入力">
-        <button id="saveSettingsBtn">保存する</button>
+        <button id="saveSettingsBtn" style="width:100%; padding:12px; background:#007aff; color:white; border:none; border-radius:10px; font-size:16px; margin-bottom: 12px;">保存する</button>
+        
+        <button id="logoutBtn" style="width:100%; padding:12px; background:#ff3b30; color:white; border:none; border-radius:10px; font-size:16px; font-weight: bold; cursor: pointer;">ログアウト</button>
     </div>
 </div>
 
