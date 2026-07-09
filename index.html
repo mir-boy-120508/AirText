@@ -2,453 +2,310 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AirText Max</title>
-    
     <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="AirText">
-
-    <style>
-        html, body { height: 100%; margin: 0; font-family: -apple-system, sans-serif; background: #f2f2f7; overflow: hidden; }
-        .view { display: none; height: 100vh; width: 100%; position: absolute; top: 0; left: 0; box-sizing: border-box; }
-        
-        /* ログイン画面 */
-        #loginView { background: #000; color: white; justify-content: center; align-items: center; }
-        .login-box { width: 320px; text-align: center; padding: 20px; margin: auto; }
-        .login-box input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: none; background: #1c1c1e; color: white; font-size: 16px; -webkit-appearance: none; box-sizing: border-box; }
-        .login-box button { width: 100%; padding: 15px; border-radius: 12px; border: none; background: #007aff; color: white; font-size: 16px; cursor: pointer; margin-bottom: 12px; font-weight: bold; }
-        .google-btn { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #ddd; background: white; color: #333; font-size: 16px; cursor: pointer; margin-bottom: 15px; font-weight: bold; }
-        .switch-link { color: #007aff; cursor: pointer; text-decoration: underline; font-size: 14px; }
-
-        /* ホーム画面 */
-        #homeView { background: white; flex-direction: column; }
-        .header { padding: 15px 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; height: 60px; box-sizing: border-box; }
-        .contact-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; background: white; }
-        .contact-item { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; align-items: center; cursor: pointer; position: relative; }
-        .avatar { width: 50px; height: 50px; background: #007aff; border-radius: 50%; margin-right: 15px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px; object-fit: cover; }
-        .badge { position: absolute; right: 25px; background: #ff3b30; color: white; padding: 4px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; }
-        .add-btn { position: absolute; bottom: 30px; right: 30px; width: 65px; height: 65px; background: #007aff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 35px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); cursor: pointer; z-index: 99; }
-        .icon-btn { font-size: 24px; cursor: pointer; background: none; border: none; padding: 5px; }
-
-        /* チャット画面 */
-        #chatView { background: white; flex-direction: column; }
-        .chat-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; height: 60px; box-sizing: border-box; }
-        .message-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; background: #fff; }
-        
-        /* メッセージコンテナと吹き出し */
-        .msg-container { max-width: 75%; margin-bottom: 12px; display: flex; flex-direction: column; position: relative; }
-        .msg-container.sent { align-self: flex-end; align-items: flex-end; }
-        .msg-container.received { align-self: flex-start; align-items: flex-start; }
-        
-        .msg { padding: 12px 16px; border-radius: 20px; font-size: 16px; line-height: 1.5; word-wrap: break-word; white-space: pre-wrap; user-select: none; -webkit-user-select: none; cursor: pointer; }
-        .sent .msg { background: #007aff; color: white; border-bottom-right-radius: 4px; }
-        .received .msg { background: #e5e5ea; color: black; border-bottom-left-radius: 4px; }
-        
-        /* メモ情報（時間・既読） */
-        .msg-meta { font-size: 11px; color: #8e8e93; margin-top: 2px; display: flex; gap: 5px; }
-        
-        /* ❤️リアクションバッジ */
-        .heart-badge { position: absolute; bottom: -8px; background: white; border: 1px solid #e5e5ea; border-radius: 10px; padding: 1px 4px; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); pointer-events: none; display: none; }
-        .sent .heart-badge { right: 10px; }
-        .received .heart-badge { left: 10px; }
-        
-        .input-bar { padding: 10px 15px; display: flex; background: white; border-top: 1px solid #ddd; align-items: center; height: 60px; box-sizing: border-box; }
-        .input-bar input[type="text"] { flex: 1; padding: 12px 18px; border: 1px solid #ddd; border-radius: 25px; outline: none; font-size: 16px; -webkit-appearance: none; }
-
-        /* 設定画面 */
-        #settingsView { background: white; padding: 30px; align-items: center; flex-direction: column; }
-        .setting-box { width: 100%; max-width: 350px; text-align: center; margin-top: 50px; }
-        .setting-box input[type="text"] { width: 100%; padding: 12px; margin: 20px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
-    </style>
-
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+
+    <style>
+        :root { --main-blue: #007aff; --bg-gray: #f2f2f7; --msg-received: #e5e5ea; }
+        html, body { height: 100%; margin: 0; font-family: -apple-system, sans-serif; background: var(--bg-gray); overflow: hidden; }
+        .view { display: none; height: 100vh; width: 100%; position: absolute; flex-direction: column; }
+        
+        /* 共通ヘッダー */
+        .header { padding: 10px 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; background: #fff; height: 60px; z-index: 10; }
+        .icon-btn { font-size: 22px; cursor: pointer; background: none; border: none; padding: 5px; }
+
+        /* リスト表示 */
+        .contact-list { flex: 1; overflow-y: auto; background: white; }
+        .item { padding: 12px 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; cursor: pointer; }
+        .avatar { width: 45px; height: 45px; background: #ccc; border-radius: 50%; margin-right: 12px; display: flex; align-items: center; justify-content: center; color: white; overflow: hidden; object-fit: cover; }
+
+        /* チャット吹き出し */
+        .message-area { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; background: #fff; }
+        .msg-container { max-width: 80%; margin-bottom: 15px; position: relative; display: flex; flex-direction: column; }
+        .msg-container.sent { align-self: flex-end; align-items: flex-end; }
+        .msg-container.received { align-self: flex-start; align-items: flex-start; }
+        .msg { padding: 10px 14px; border-radius: 18px; font-size: 16px; word-wrap: break-word; cursor: pointer; position: relative; transition: opacity 0.2s; }
+        .sent .msg { background: var(--main-blue); color: white; }
+        .received .msg { background: var(--msg-received); color: black; }
+        .msg img { max-width: 200px; border-radius: 10px; display: block; margin: 5px 0; }
+        .msg a { color: inherit; text-decoration: underline; }
+
+        /* リアクション表示 */
+        .reactions { display: flex; gap: 2px; position: absolute; bottom: -12px; background: white; border-radius: 10px; padding: 2px 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); font-size: 12px; z-index: 5; }
+        .sent .reactions { right: 10px; }
+        .received .reactions { left: 10px; }
+
+        /* リアクションピッカー & メニュー */
+        #contextMenu { display: none; position: fixed; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); padding: 10px; z-index: 1000; flex-direction: column; gap: 10px; }
+        .emoji-bar { display: flex; gap: 10px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .emoji-item { font-size: 24px; cursor: pointer; transition: transform 0.1s; }
+        .emoji-item:active { transform: scale(1.5); }
+        .menu-item { padding: 10px; color: #ff3b30; font-weight: bold; text-align: center; cursor: pointer; }
+
+        /* 入力バー */
+        .input-bar { padding: 10px; display: flex; background: white; border-top: 1px solid #ddd; align-items: center; gap: 10px; }
+        .input-bar input[type="text"] { flex: 1; padding: 10px 15px; border: 1px solid #ddd; border-radius: 20px; font-size: 16px; }
+        
+        /* ログイン */
+        #loginView { background: #000; color: #fff; justify-content: center; align-items: center; text-align: center; }
+        .btn-blue { background: var(--main-blue); color: white; border: none; padding: 12px 20px; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; }
+
+        .meta { font-size: 10px; color: #8e8e93; margin-top: 4px; }
+    </style>
 </head>
 <body>
 
-<div class="view" id="loginView">
-    <div class="login-box">
-        <h1 id="authTitle" style="font-size: 40px; margin-bottom: 30px; font-family: sans-serif;">AirText</h1>
-        <button class="google-btn" id="googleLoginBtn">🌐 Googleログイン</button>
-        <div style="margin: 15px 0; color: #666;">または</div>
-        <input type="email" id="email" placeholder="メールアドレス">
-        <input type="password" id="pw" placeholder="パスワード">
-        <button id="mainAuthBtn">ログイン</button>
-        <div id="switchAuthMode" class="switch-link">新しくアカウントを作る(Sign Up)</div>
+<div class="view" id="loginView" style="display: flex;">
+    <div style="width: 80%;">
+        <h1 style="font-size: 48px;">AirText Max</h1>
+        <button class="btn-blue" id="loginBtn">Googleでログイン</button>
     </div>
 </div>
 
 <div class="view" id="homeView">
     <div class="header">
-        <button class="icon-btn" id="toSettingsBtn">⚙️</button>
-        <h2 style="margin:0; font-size:24px;">AirText</h2>
-        <div id="myEmail" style="font-size:12px; color:#888;"></div>
+        <button class="icon-btn" onclick="auth.signOut()">🚪</button>
+        <h2>AirText</h2>
+        <button class="icon-btn" id="createGroupBtn">👥+</button>
     </div>
     <div class="contact-list" id="contactList"></div>
-    <div class="add-btn" id="addBtn">+</div>
+    <button id="addContactBtn" style="position:fixed; bottom:30px; right:30px; width:60px; height:60px; border-radius:50%; background:var(--main-blue); color:white; border:none; font-size:30px; box-shadow:0 4px 10px rgba(0,0,0,0.3);">+</button>
 </div>
 
 <div class="view" id="chatView">
-    <div class="chat-header">
+    <div class="header">
         <button class="icon-btn" id="backBtn">◀</button>
-        <div id="chatTitle" style="font-weight:bold; font-size:18px;"></div>
-        <div></div>
+        <div id="chatTitle" style="font-weight:bold; cursor:pointer;"></div>
+        <div style="width:30px;"></div>
     </div>
     <div class="message-area" id="msgArea"></div>
     <div class="input-bar">
+        <button class="icon-btn" id="photoBtn">🖼️</button>
+        <input type="file" id="fileInput" accept="image/*" style="display:none;">
         <input type="text" id="msgInput" placeholder="メッセージ">
-        <button id="sendBtn" style="background:#007aff; color:white; border:none; width:40px; height:40px; border-radius:50%; margin-left:10px; font-size:20px; cursor:pointer;">↑</button>
+        <button id="sendBtn" style="background:var(--main-blue); color:white; border:none; width:35px; height:35px; border-radius:50%; font-weight:bold;">↑</button>
     </div>
 </div>
 
-<div class="view" id="settingsView">
-    <div class="chat-header" style="width:100%; position:absolute; top:0; left:0;">
-        <button class="icon-btn" id="backFromSettings">◀ 戻る</button>
-        <div style="font-weight:bold;">プロフィール設定</div>
-        <div></div>
+<div id="contextMenu">
+    <div class="emoji-bar">
+        <span class="emoji-item">❤️</span><span class="emoji-item">👍</span><span class="emoji-item">😂</span><span class="emoji-item">😮</span><span class="emoji-item">🙏</span>
     </div>
-    <div class="setting-box">
-        <label for="avatarInput">
-            <img class="avatar" id="myAvatarPreview" style="width:100px; height:100px; margin:0 auto; cursor:pointer; background:#ccc;" src="">
-            <p style="font-size:12px; color:#007aff;">画像をタップして変更</p>
-        </label>
-        <input type="file" id="avatarInput" accept="image/*" style="display:none;">
-        <input type="text" id="nicknameInput" placeholder="ニックネームを入力">
-        <button id="saveSettingsBtn" style="width:100%; padding:12px; background:#007aff; color:white; border:none; border-radius:10px; font-size:16px;">保存する</button>
-    </div>
+    <div class="menu-item" id="deleteMsgBtn">メッセージ送信消去</div>
 </div>
 
 <script>
-    window.onerror = function(msg, url, line) {
-        alert("プログラムエラー発生:\n" + msg + "\n行番号: " + line);
-        return false;
-    };
-
-    var firebaseConfig = {
+    // --- Firebase設定 ---
+    const firebaseConfig = {
         apiKey: "AIzaSyAFxMMoJ6q0pQqRimkJaY6eDyBWgLqaNWc",
         authDomain: "airtext-mirboy.firebaseapp.com",
         projectId: "airtext-mirboy",
-        storageBucket: "airtext-mirboy.firebasestorage.app",
+        storageBucket: "airtext-mirboy.appspot.com",
         messagingSenderId: "1091018853143",
         appId: "1:1091018853143:web:c1ed8f39e4886656800552"
     };
-
     firebase.initializeApp(firebaseConfig);
-    var db = firebase.firestore();
-    var auth = firebase.auth();
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    const storage = firebase.storage();
 
-    var GEMINI_API_KEY = "★ここに取得したGeminiのAPIキーを貼り付ける★";
+    let me = null;
+    let currentRoomId = null;
+    let isGroup = false;
+    let selectedMsgId = null;
 
-    var me = null, targetEmail = null, chatUnsub = null, statusUnsub = null;
-    var myName = "", myAvatar = "";
-    var isSignUpMode = false;
-    var audioCtx = null;
-    var partnerInRoom = false; // 相手が部屋にいるかどうか
-
-    function playNotificationSound() {
-        try {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            var osc = audioCtx.createOscillator();
-            var gain = audioCtx.createGain();
-            osc.connect(gain); 
-            gain.connect(audioCtx.destination);
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-            osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.1);
-            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.4);
-        } catch(e) {}
-    }
-
-    function formatTime(timestamp) {
-        if (!timestamp) return "";
-        var d = new Date(timestamp);
-        var hr = String(d.getHours()).padStart(2, '0');
-        var min = String(d.getMinutes()).padStart(2, '0');
-        return hr + ":" + min;
-    }
-
+    // --- ユーティリティ ---
     function show(id) {
-        var views = ['loginView', 'homeView', 'chatView', 'settingsView'];
-        for (var i = 0; i < views.length; i++) {
-            var v = document.getElementById(views[i]);
-            if (v) { v.style.display = 'none'; }
-        }
-        var target = document.getElementById(id);
-        if (target) { target.style.display = 'flex'; }
+        document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+        document.getElementById(id).style.display = 'flex';
     }
 
-    document.getElementById('googleLoginBtn').onclick = function() {
-        var provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithRedirect(provider);
-    };
+    // URLをリンクに変える関数
+    function linkify(text) {
+        const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+        return text.replace(urlPattern, '<a href="$1" target="_blank">$1</a>');
+    }
 
-    document.getElementById('switchAuthMode').onclick = function() {
-        isSignUpMode = !isSignUpMode;
-        if (isSignUpMode) {
-            document.getElementById('authTitle').innerText = "AirText (Sign Up)";
-            document.getElementById('mainAuthBtn').innerText = "新規アカウント登録";
-            document.getElementById('switchAuthMode').innerText = "登録済みの方はこちら (Login)";
-        } else {
-            document.getElementById('authTitle').innerText = "AirText";
-            document.getElementById('mainAuthBtn').innerText = "ログイン";
-            document.getElementById('switchAuthMode').innerText = "新しくアカウントを作る(Sign Up)";
-        }
-    };
-
-    document.getElementById('mainAuthBtn').onclick = function() {
-        var emailStr = document.getElementById('email').value.trim();
-        var pwStr = document.getElementById('pw').value.trim();
-        if(!emailStr || !pwStr) return alert("入力してください");
-
-        if (isSignUpMode) {
-            auth.createUserWithEmailAndPassword(emailStr, pwStr)
-                .then(function() { alert("アカウントを作成しました！ログインしてください。"); })
-                .catch(function(e) { alert("登録失敗: " + e.message); });
-        } else {
-            auth.signInWithEmailAndPassword(emailStr, pwStr).catch(function() { alert("ログイン失敗"); });
-        }
-    };
-
-    auth.onAuthStateChanged(function(user) {
+    // --- 認証 ---
+    document.getElementById('loginBtn').onclick = () => auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+    
+    auth.onAuthStateChanged(user => {
         if (user) {
             me = user;
-            document.getElementById('myEmail').innerText = me.email;
-            
-            db.collection("profiles").doc(me.email).onSnapshot(function(docSnap) {
-                var data = docSnap.data();
-                if (data) {
-                    myName = data.name || "";
-                    myAvatar = data.avatar || "";
-                    document.getElementById('nicknameInput').value = myName;
-                    if (myAvatar) document.getElementById('myAvatarPreview').src = myAvatar;
-                }
-                show('homeView');
-                listenContacts();
-            });
+            show('homeView');
+            listenContacts();
         } else {
             show('loginView');
         }
     });
 
-    document.getElementById('toSettingsBtn').onclick = function() { show('settingsView'); };
-    document.getElementById('backFromSettings').onclick = function() { show('homeView'); };
-
-    document.getElementById('avatarInput').onchange = function(e) {
-        var reader = new FileReader();
-        reader.onload = function() { document.getElementById('myAvatarPreview').src = reader.result; };
-        if (e.target.files[0]) reader.readAsDataURL(e.target.files[0]);
+    // --- 連絡先・グループ管理 ---
+    document.getElementById('addContactBtn').onclick = () => {
+        const email = prompt("追加する相手のメールアドレス:");
+        if (email && email !== me.email) {
+            const id = [me.email, email].sort().join("_");
+            db.collection("contacts").doc(id).set({ users: [me.email, email], type: "direct", time: Date.now() });
+        }
     };
 
-    document.getElementById('saveSettingsBtn').onclick = function() {
-        var name = document.getElementById('nicknameInput').value.trim();
-        var avatar = document.getElementById('myAvatarPreview').src;
-        db.collection("profiles").doc(me.email).set({ name: name, avatar: avatar.indexOf('data') === 0 ? avatar : myAvatar }, { merge: true }).then(function() {
-            alert("プロフィールを保存しました");
-            show('homeView');
-        });
+    document.getElementById('createGroupBtn').onclick = () => {
+        const name = prompt("グループ名:");
+        const emails = prompt("参加者のメールをコンマ区切りで入力 (例: a@a.com, b@b.com):");
+        if (name && emails) {
+            const members = emails.split(",").map(e => e.trim());
+            members.push(me.email);
+            db.collection("contacts").add({ name, users: members, type: "group", time: Date.now() });
+        }
     };
 
-    document.getElementById('addBtn').onclick = function() {
-        var mail = prompt("追加する相手のメールアドレスを入力:");
-        if (!mail || mail === me.email) return;
-        var linkId = [me.email, mail].sort().join("_");
-        db.collection("contact_links").doc(linkId).set({ users: [me.email, mail], time: Date.now() });
-    };
-
-    var firstLoad = true;
     function listenContacts() {
-        db.collection("contact_links").where("users", "array-contains", me.email).onSnapshot(function(snap) {
-            var list = document.getElementById('contactList');
+        db.collection("contacts").where("users", "array-contains", me.email).onSnapshot(snap => {
+            const list = document.getElementById('contactList');
             list.innerHTML = "";
-
-            // 🛠️ 提案通り、Gemini AIの案内枠（Bot）を一旦ここから完全に非表示にしました
-
-            snap.forEach(function(d) {
-                var users = d.data().users;
-                var other = users[0] === me.email ? users[1] : users[0];
-                var safeId = other.replace(/[^a-zA-Z0-9]/g, "");
+            snap.forEach(doc => {
+                const data = doc.data();
+                const isG = data.type === "group";
+                const other = isG ? data.name : data.users.find(u => u !== me.email);
                 
-                var item = document.createElement('div');
-                item.className = "contact-item";
-                item.innerHTML = '<div class="avatar" id="av-'+safeId+'">'+other[0].toUpperCase() + '</div><div style="font-weight:bold;" id="name-'+safeId+'">' + other + '</div>';
+                const item = document.createElement('div');
+                item.className = "item";
+                item.innerHTML = `<div class="avatar">${isG ? "👥" : other[0].toUpperCase()}</div><div style="font-weight:bold;">${other}</div>`;
                 
-                db.collection("profiles").doc(other).onSnapshot(function(pSnap) {
-                    var pData = pSnap.data();
-                    if (pData) {
-                        var avEl = document.getElementById('av-'+safeId);
-                        var nmEl = document.getElementById('name-'+safeId);
-                        if (pData.avatar && avEl) { avEl.innerHTML = ""; var img = document.createElement('img'); img.src = pData.avatar; img.className="avatar"; img.style.margin="0"; avEl.appendChild(img); }
-                        if (pData.name && nmEl) { nmEl.innerText = pData.name; }
-                    }
-                });
+                // ニックネーム（呼び名）の反映
+                if(!isG) {
+                    db.collection("nicknames").doc(me.email).collection("targets").doc(other).onSnapshot(nSnap => {
+                        if(nSnap.exists) item.querySelector('div:last-child').innerText = nSnap.data().name;
+                    });
+                }
 
-                var roomId = [me.email, other].sort().join("_");
-                db.collection("room_status").doc(roomId).onSnapshot(function(docSnap) {
-                    var status = docSnap.data();
-                    var b = item.querySelector('.badge');
-                    if (status && status.unread && status.unread === me.email) {
-                        if (!b) {
-                            b = document.createElement('div'); b.className = "badge"; b.innerText = "新着"; item.appendChild(b);
-                            if (!firstLoad) { playNotificationSound(); }
-                        }
-                    } else { if (b) b.remove(); }
-                });
-
-                item.onclick = function() { openChat(other); };
+                item.onclick = () => openChat(doc.id, other, isG);
                 list.appendChild(item);
             });
-            firstLoad = false;
         });
     }
 
-    function getRoomId(target) {
-        return [me.email, target].sort().join("_");
-    }
-
-    function openChat(email) {
-        targetEmail = email;
-        document.getElementById('chatTitle').innerText = targetEmail;
+    // --- チャット画面 ---
+    function openChat(roomId, title, isG) {
+        currentRoomId = roomId;
+        isGroup = isG;
+        document.getElementById('chatTitle').innerText = title;
         show('chatView');
-        
-        var roomId = getRoomId(targetEmail);
-        
-        // 既読機能用：自分がこの部屋を開いた状態にセット
-        db.collection("room_status").doc(roomId).set({ unread: "", current_users: firebase.firestore.FieldValue.arrayUnion(me.email) }, { merge: true });
 
-        // 相手がこの部屋を開いているかをリアルタイム監視
-        if(statusUnsub) statusUnsub();
-        statusUnsub = db.collection("room_status").doc(roomId).onSnapshot(function(docSnap) {
-            var status = docSnap.data();
-            if (status && status.current_users && status.current_users.includes(targetEmail)) {
-                partnerInRoom = true;
-            } else {
-                partnerInRoom = false;
-            }
-        });
+        // 呼び名変更機能
+        document.getElementById('chatTitle').onclick = () => {
+            if(isGroup) return;
+            const newName = prompt("相手の呼び名を設定（自分にだけ見えます）:", title);
+            if(newName) db.collection("nicknames").doc(me.email).collection("targets").doc(title).set({name: newName});
+        };
 
-        if (chatUnsub) chatUnsub();
-        chatUnsub = db.collection("rooms").doc(roomId).collection("messages").orderBy("time", "asc").onSnapshot(function(snap) {
-            var area = document.getElementById('msgArea');
+        db.collection("contacts").doc(currentRoomId).collection("messages").orderBy("time", "asc").onSnapshot(snap => {
+            const area = document.getElementById('msgArea');
             area.innerHTML = "";
-            
-            snap.forEach(function(d) {
-                var data = d.data();
-                var msgId = d.id;
-                var isMe = (data.sender === me.email);
+            snap.forEach(doc => {
+                const d = doc.data();
+                const isMe = d.sender === me.email;
+                const container = document.createElement('div');
+                container.className = `msg-container ${isMe ? 'sent' : 'received'}`;
                 
-                // メッセージを包むコンテナ
-                var container = document.createElement('div');
-                container.className = "msg-container " + (isMe ? 'sent' : 'received');
+                let content = d.type === "image" ? `<img src="${d.url}">` : linkify(d.text);
                 
-                // 吹き出し本体
-                var m = document.createElement('div');
-                m.className = "msg";
-                m.innerText = data.text;
-                
-                // ダブルタップ（トントン）で❤️をつける・外す機能
-                var lastTap = 0;
-                m.addEventListener('touchend', function(e) {
-                    var now = Date.now();
-                    if (now - lastTap < 300) {
-                        toggleHeart(roomId, msgId, data.heart);
-                    }
-                    lastTap = now;
-                });
-                m.addEventListener('dblclick', function(e) {
-                    toggleHeart(roomId, msgId, data.heart);
-                });
+                const reactionsHtml = d.reactions ? `<div class="reactions">${Object.entries(d.reactions).map(([emoji, users]) => users.length > 0 ? emoji : "").join("")}</div>` : "";
 
-                // 時間と既読用のメタ情報エリア
-                var meta = document.createElement('div');
-                meta.className = "msg-meta";
-                var timeStr = formatTime(data.time);
+                container.innerHTML = `
+                    <div class="msg" data-id="${doc.id}">${content}</div>
+                    ${reactionsHtml}
+                    <div class="meta">${isMe ? (d.isRead ? '既読 ' : '送出 ') : ''}${new Date(d.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                `;
+
+                // 長押し/右クリックメニュー
+                const msgEl = container.querySelector('.msg');
+                msgEl.oncontextmenu = (e) => { e.preventDefault(); showMenu(e, doc.id, isMe); };
                 
-                if (isMe) {
-                    // 自分が送ったメッセージの場合：相手が部屋にいるか、または既にメッセージが既読状態なら「既読」と出す
-                    var readText = (partnerInRoom || data.isRead) ? "既読 " : "";
-                    meta.innerText = readText + timeStr;
-                    // 同期のためにデータベース上の未読フラグも更新
-                    if (partnerInRoom && !data.isRead) {
-                        db.collection("rooms").doc(roomId).collection("messages").doc(msgId).update({ isRead: true });
-                    }
-                } else {
-                    // 相手から届いたメッセージの場合：時間だけ表示
-                    meta.innerText = timeStr;
-                    // 自分が今部屋を開いているので自動的に既読にする
-                    if (!data.isRead) {
-                        db.collection("rooms").doc(roomId).collection("messages").doc(msgId).update({ isRead: true });
-                    }
-                }
+                // スマホ用長押し
+                let timer;
+                msgEl.ontouchstart = (e) => timer = setTimeout(() => showMenu(e.touches[0], doc.id, isMe), 600);
+                msgEl.ontouchend = () => clearTimeout(timer);
 
-                // ❤️バッジ
-                var heartBadge = document.createElement('div');
-                heartBadge.className = "heart-badge";
-                heartBadge.innerText = "❤️";
-                if (data.heart) {
-                    heartBadge.style.display = "block";
-                }
-
-                container.appendChild(m);
-                container.appendChild(heartBadge);
-                container.appendChild(meta);
                 area.appendChild(container);
             });
             area.scrollTop = area.scrollHeight;
         });
     }
 
-    // ❤️をつけたり消したりする関数
-    function toggleHeart(roomId, msgId, currentStatus) {
-        db.collection("rooms").doc(roomId).collection("messages").doc(msgId).update({
-            heart: !currentStatus
-        });
+    // --- メニュー操作（リアクション・消去） ---
+    function showMenu(e, msgId, isMe) {
+        selectedMsgId = msgId;
+        const menu = document.getElementById('contextMenu');
+        menu.style.display = 'flex';
+        menu.style.top = `${Math.min(e.clientY, window.innerHeight - 150)}px`;
+        menu.style.left = `${Math.min(e.clientX, window.innerWidth - 200)}px`;
+        document.getElementById('deleteMsgBtn').style.display = isMe ? 'block' : 'none';
     }
 
-    function closeChat() {
-        if (!targetEmail) return;
-        var roomId = getRoomId(targetEmail);
-        // 画面を離れるときは、部屋にいるユーザー一覧から自分を抜く
-        db.collection("room_status").doc(roomId).set({
-            current_users: firebase.firestore.FieldValue.arrayRemove(me.email)
-        }, { merge: true });
-        
-        targetEmail = null;
-        show('homeView');
-    }
+    document.addEventListener('click', (e) => {
+        if(!e.target.closest('#contextMenu')) document.getElementById('contextMenu').style.display = 'none';
+    });
 
-    function send() {
-        var input = document.getElementById('msgInput');
-        var text = input.value.trim();
-        if (!text || !targetEmail) return;
+    document.querySelectorAll('.emoji-item').forEach(el => {
+        el.onclick = () => {
+            const emoji = el.innerText;
+            const ref = db.collection("contacts").doc(currentRoomId).collection("messages").doc(selectedMsgId);
+            db.runTransaction(async (transaction) => {
+                const doc = await transaction.get(ref);
+                let reactions = doc.data().reactions || {};
+                if(!reactions[emoji]) reactions[emoji] = [];
+                if(reactions[emoji].includes(me.email)) {
+                    reactions[emoji] = reactions[emoji].filter(u => u !== me.email);
+                } else {
+                    reactions[emoji].push(me.email);
+                }
+                transaction.update(ref, { reactions });
+            });
+        };
+    });
 
-        var roomId = getRoomId(targetEmail);
-        
-        var msgData = {
-            text: text,
+    document.getElementById('deleteMsgBtn').onclick = () => {
+        if(confirm("メッセージの送信を取り消しますか？")) {
+            db.collection("contacts").doc(currentRoomId).collection("messages").doc(selectedMsgId).delete();
+        }
+    };
+
+    // --- メッセージ送信 ---
+    async function send(type, content) {
+        if(!content || !currentRoomId) return;
+        const msgData = {
             sender: me.email,
             time: Date.now(),
-            type: "text",
-            isRead: partnerInRoom, // 送った瞬間に相手が部屋にいたら最初から既読にする
-            heart: false // 初期状態は❤️なし
+            type: type,
+            reactions: {},
+            isRead: false
         };
-
-        input.value = "";
-
-        db.collection("rooms").doc(roomId).collection("messages").add(msgData).then(function() {
-            if (!partnerInRoom) {
-                db.collection("room_status").doc(roomId).set({ unread: targetEmail }, { merge: true });
-            }
-        });
+        if(type === "text") msgData.text = content; else msgData.url = content;
+        
+        db.collection("contacts").doc(currentRoomId).collection("messages").add(msgData);
+        document.getElementById('msgInput').value = "";
     }
 
-    document.getElementById('sendBtn').onclick = send;
-    document.getElementById('msgInput').onkeypress = function(e) { if (e.key === 'Enter' || e.keyCode === 13) send(); };
-    document.getElementById('backBtn').onclick = closeChat;
+    document.getElementById('sendBtn').onclick = () => send("text", document.getElementById('msgInput').value.trim());
+    document.getElementById('msgInput').onkeypress = (e) => { if(e.key === "Enter") send("text", e.target.value.trim()); };
+    document.getElementById('backBtn').onclick = () => show('homeView');
+
+    // 写真送信
+    document.getElementById('photoBtn').onclick = () => document.getElementById('fileInput').click();
+    document.getElementById('fileInput').onchange = async (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        const ref = storage.ref(`chats/${currentRoomId}/${Date.now()}_${file.name}`);
+        const snap = await ref.put(file);
+        const url = await snap.ref.getDownloadURL();
+        send("image", url);
+    };
+
 </script>
 </body>
 </html>
