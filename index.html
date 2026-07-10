@@ -166,7 +166,7 @@
 </div>
 
 <script>
-    window.onerror = function(msg, url, line) {
+window.onerror = function(msg, url, line) {
         alert("プログラムエラー発生:\n" + msg + "\n行番号: " + line);
         return false;
     };
@@ -183,8 +183,7 @@
     firebase.initializeApp(firebaseConfig);
     var db = firebase.firestore();
     var auth = firebase.auth();
-    var storage = firebase.storage();
-
+    // ※ Firebase Storageは有料プラン制限のため使用停止
     var me = null, targetEmail = null, chatUnsub = null, statusUnsub = null;
     var myName = "", myAvatar = "";
     var isSignUpMode = false;
@@ -193,7 +192,7 @@
     var activeRoomId = null;
     var isGroupMode = false;
     var focusedMsgId = null;
-    var toastTargetRoomId = null;
+    var toastTargetRoomId = null; 
 
     var OFFICIAL_EMAIL = "official@airtext.com";
 
@@ -206,7 +205,6 @@
 
     function triggerPopupNotification(sender, messageText, roomId) {
         if (activeRoomId === roomId) return;
-
         var senderName = sender === OFFICIAL_EMAIL ? "AirText公式" : sender;
         toastTargetRoomId = roomId;
 
@@ -304,7 +302,7 @@
                 .then(function(userCredential) {
                     var newUserEmail = userCredential.user.email;
                     var linkId = [newUserEmail, OFFICIAL_EMAIL].sort().join("_");
-                    
+                
                     db.collection("profiles").doc(newUserEmail).set({
                         name: newUserEmail.split("@")[0],
                         avatar: ""
@@ -316,19 +314,19 @@
                         time: Date.now()
                     });
 
+                    // 初回歓迎メッセージ（既読リストは最初は空配列）
                     db.collection("rooms").doc(linkId).collection("messages").add({
                         text: "AirTextへようこそ！ここには公式からの大切なお知らせが届きます。まずは友達を追加してチャットを始めてみましょう！",
                         sender: OFFICIAL_EMAIL,
                         time: Date.now(),
                         msgType: "text",
-                        isRead: false,
+                        readBy: [], 
                         reactions: {}
                     });
 
                     db.collection("room_status").doc(linkId).set({
                         unread: newUserEmail
                     }, { merge: true });
-
                     alert("アカウントを作成しました！ログインしてください。");
                 })
                 .catch(function(e) { alert("登録失敗: " + e.message); });
@@ -366,13 +364,11 @@
 
     document.getElementById('toSettingsBtn').onclick = function() { show('settingsView'); };
     document.getElementById('backFromSettings').onclick = function() { show('homeView'); };
-
     document.getElementById('avatarInput').onchange = function(e) {
         var reader = new FileReader();
         reader.onload = function() { document.getElementById('myAvatarPreview').src = reader.result; };
         if (e.target.files[0]) reader.readAsDataURL(e.target.files[0]);
     };
-
     document.getElementById('saveSettingsBtn').onclick = function() {
         var name = document.getElementById('nicknameInput').value.trim();
         var avatar = document.getElementById('myAvatarPreview').src;
@@ -436,10 +432,9 @@
                         var pData = pSnap.data();
                         if (pData) {
                             var avEl = document.getElementById('av-'+safeId);
-                            if (pData.avatar && avEl) { avEl.innerHTML = ""; var img = document.createElement('img'); img.src = pData.avatar; img.className="avatar"; img.style.margin="0"; avEl.appendChild(img); avEl.style.display = "flex"; }
+                            if (pData.avatar && avEl) { avEl.innerHTML = ""; var img = document.createElement('img'); img.src = pData.avatar; img.className="avatar"; img.style.margin="0"; avEl.appendChild(img); }
                         }
                     });
-                    
                     db.collection("my_nicknames").doc(me.email).collection("targets").doc(other).onSnapshot(function(nSnap) {
                         var nmEl = document.getElementById('name-'+safeId);
                         if(nmEl) {
@@ -456,13 +451,12 @@
                     var status = docSnap.data();
                     var b = item.querySelector('.badge');
                     if (status && status.unread && (status.unread === me.email || (isGroup && status.unread === "group_update"))) {
-                        if (!b) {
+                         if (!b) {
                             b = document.createElement('div'); b.className = "badge"; b.innerText = "新着"; item.appendChild(b);
                             if (!firstLoad) { playNotificationSound(); }
-                        }
+                         }
                     } else { if (b) b.remove(); }
                 });
-
                 item.onclick = function() { openChat(roomId, isGroup, other, data.groupName); };
                 list.appendChild(item);
             });
@@ -470,7 +464,6 @@
         });
     }
 
-    var activeListeners = {};
     function setupGlobalMessageListener() {
         db.collection("contact_links").where("users", "array-contains", me.email).onSnapshot(function(snap) {
             snap.forEach(function(d) {
@@ -512,18 +505,16 @@
         }
         
         show('chatView');
-        
         titleEl.onclick = function() {
             if(isGroupMode) return;
             var currentAlias = titleEl.innerText;
-            var newAlias = prompt("この相手のあなた専用 of 呼び名（お母さん、妹など）を入力してください:", currentAlias);
+            var newAlias = prompt("この相手のあなた専用の呼び名（お母さん、妹など）を入力してください:", currentAlias);
             if(newAlias !== null) {
                 db.collection("my_nicknames").doc(me.email).collection("targets").doc(targetEmail).set({ alias: newAlias.trim() });
             }
         };
 
         db.collection("room_status").doc(activeRoomId).set({ unread: "", current_users: firebase.firestore.FieldValue.arrayUnion(me.email) }, { merge: true });
-
         if(!isGroupMode) {
             if(statusUnsub) statusUnsub();
             statusUnsub = db.collection("room_status").doc(activeRoomId).onSnapshot(function(docSnap) {
@@ -547,6 +538,15 @@
                 var data = d.data();
                 var msgId = d.id;
                 var isMe = (data.sender === me.email);
+                
+                // 【バグB修正】受信時・閲覧時のリアルタイム監視内で既読を反映
+                // 相手から送られてきた未読メッセージを自分が開いた場合、自分のアドレスをreadByに追加
+                var readByArray = data.readBy || [];
+                if (!isMe && !readByArray.includes(me.email)) {
+                    db.collection("rooms").doc(activeRoomId).collection("messages").doc(msgId).update({
+                        readBy: firebase.firestore.FieldValue.arrayUnion(me.email)
+                    });
+                }
                 
                 var container = document.createElement('div');
                 container.className = "msg-container " + (isMe ? 'sent' : 'received');
@@ -580,23 +580,15 @@
                 var meta = document.createElement('div');
                 meta.className = "msg-meta";
                 var timeStr = formatTime(data.time);
-                
-                // 既読表示の修正：送信時に自分を入れなくなったので、配列の数でダイレクトに判定可能
-                let readLabel = "";
-                if (isMe && data.readBy) {
-                    var readCount = data.readBy.length;
-                    if(readCount > 0) {
-                        readLabel = isGroupMode ? `既読 ${readCount} ` : "既読 ";
-                    }
-                }
-                
-                meta.innerText = readLabel + timeStr;
 
-                // 既読処理の修正：相手が送ってきた未読メッセージを開いたら、読んだ人として自分を追加
-                if (!isMe && (!data.readBy || !data.readBy.includes(me.email))) {
-                    db.collection("rooms").doc(activeRoomId).collection("messages").doc(msgId).update({
-                        readBy: firebase.firestore.FieldValue.arrayUnion(me.email)
-                    });
+                // 【バグB修正】表示時のロジック簡素化
+                // 自分が送信したメッセージで、配列（readBy）に相手のアドレスが1つでも入っていれば「既読」と判定
+                if (isMe) {
+                    var isRead = readByArray.length > 0;
+                    var readText = isRead ? "既読 " : "";
+                    meta.innerText = (isGroupMode ? "" : readText) + timeStr;
+                } else {
+                    meta.innerText = timeStr;
                 }
 
                 var heartBadge = document.createElement('div');
@@ -653,7 +645,7 @@
                     var currentData = resDoc.data();
                     var rMap = currentData.reactions || {};
                     if(!rMap[chosenEmoji]) rMap[chosenEmoji] = [];
-                    
+                        
                     if(rMap[chosenEmoji].includes(me.email)) {
                         rMap[chosenEmoji] = rMap[chosenEmoji].filter(function(u) { return u !== me.email; });
                     } else {
@@ -680,7 +672,6 @@
         db.collection("room_status").doc(activeRoomId).set({
             current_users: firebase.firestore.FieldValue.arrayRemove(me.email)
         }, { merge: true });
-        
         targetEmail = null;
         activeRoomId = null;
         show('homeView');
@@ -691,13 +682,19 @@
         var text = input.value.trim();
         if (!text || !activeRoomId) return;
 
-        // 修正：送信した瞬間は自分を入れず、相手がいれば相手、いなければ空の配列で構築
+        // 【バグB修正】送信時：readByには自分のアドレスを絶対に入れない
+        // もし相手がすでに同室（partnerInRoom）していれば最初から相手のアドレスを配列に、そうでなければ空配列 [] で送信
+        var initialReadBy = [];
+        if (partnerInRoom && targetEmail) {
+            initialReadBy.push(targetEmail);
+        }
+
         var msgData = {
             text: text,
             sender: me.email,
             time: Date.now(),
             msgType: "text",
-            readBy: partnerInRoom ? [targetEmail] : [],
+            readBy: initialReadBy, 
             reactions: {}
         };
         input.value = "";
@@ -715,30 +712,41 @@
         document.getElementById('imageFileInput').click();
     };
 
-    // 📸【Base64無料版に修正】Storageを使わずFirestoreへ直接画像データを保存
+    // 【バグA修正】Storageへのアップロードを廃止し、完全無料でFirestoreにBase64保存
     document.getElementById('imageFileInput').onchange = function(e) {
         var file = e.target.files[0];
-        if(!file || !activeRoomId) return;
+        if(!file) return;
 
         var reader = new FileReader();
-        reader.onload = function() {
-            var base64Data = reader.result;
+        reader.onload = function(event) {
+            var base64Data = event.target.result; // 画像のBase64文字列を取得
+
+            // 【バグB修正】送信時のreadBy配列の初期設定
+            var initialReadBy = [];
+            if (partnerInRoom && targetEmail) {
+                initialReadBy.push(targetEmail);
+            }
 
             var msgData = {
-                url: base64Data,
+                url: base64Data, // data:image/...形式の文字列を直接urlに格納
                 sender: me.email,
                 time: Date.now(),
                 msgType: "image",
-                readBy: partnerInRoom ? [targetEmail] : [],
+                readBy: initialReadBy,
                 reactions: {}
             };
 
-            db.collection("rooms").doc(activeRoomId).collection("messages").add(msgData)
-            .catch(function(err) {
-                alert("画像の送信に失敗しました: " + err.message);
+            db.collection("rooms").doc(activeRoomId).collection("messages").add(msgData).then(function() {
+                if (!partnerInRoom && !isGroupMode) {
+                    db.collection("room_status").doc(activeRoomId).set({ unread: targetEmail }, { merge: true });
+                } else if (isGroupMode) {
+                    db.collection("room_status").doc(activeRoomId).set({ unread: "group_update" }, { merge: true });
+                }
+            }).catch(function(err) {
+                alert("Firestoreへの画像データ保存に失敗しました: " + err.message);
             });
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(file); // 画像をBase64データURLとして読み込む
     };
 
     document.getElementById('sendBtn').onclick = send;
