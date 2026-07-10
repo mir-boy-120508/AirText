@@ -70,13 +70,12 @@
         .input-bar { padding: 10px 15px; display: flex; background: var(--card-bg); border-top: 1px solid rgba(0,0,0,0.05); align-items: center; height: 60px; box-sizing: border-box; gap: 8px; }
         .input-bar input[type="text"] { flex: 1; padding: 10px 16px; border: 1px solid rgba(0,0,0,0.1); border-radius: 20px; outline: none; font-size: 16px; -webkit-appearance: none; background: var(--bg-color); color: var(--text-main); }
 
-        #settingsView { background: var(--bg-color); padding: 30px; align-items: center; flex-direction: column; }
+        #settingsView { background: var(--bg-color); padding: 30px; align-items: center; flex-direction: column; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .setting-box { width: 100%; max-width: 350px; text-align: center; margin-top: 50px; padding-bottom: 40px; }
         .setting-box input[type="text"] { width: 100%; padding: 12px; margin: 20px 0; border: 1px solid rgba(0,0,0,0.1); border-radius: 10px; font-size: 16px; box-sizing: border-box; background: var(--card-bg); color: var(--text-main); }
 
-        /* 【追加】画面内ポップアップ通知（トースト）のスタイル */
         #toastNotification {
-            position: fixed; top: -100px; left: 5%, width: 90%; max-width: 400px; left: 50%; transform: translateX(-50%);
+            position: fixed; top: -100px; left: 5%; width: 90%; max-width: 400px; left: 50%; transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.85); color: white; padding: 15px 20px; border-radius: 16px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 10000; font-size: 15px; display: flex; flex-direction: column; gap: 4px;
             transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); cursor: pointer;
@@ -139,7 +138,7 @@
 <div class="view" id="settingsView">
     <div class="chat-header" style="width:100%; position:absolute; top:0; left:0;">
         <button class="icon-btn" id="backFromSettings">◀ 戻る</button>
-        <div style="font-weight:700;\">プロフィール設定</div>
+        <div style="font-weight:700;">プロフィール設定</div>
         <div style="width:32px;"></div>
     </div>
     <div class="setting-box">
@@ -149,7 +148,7 @@
         </label>
         <input type="file" id="avatarInput" accept="image/*" style="display:none;">
         <input type="text" id="nicknameInput" placeholder="ニックネームを入力">
-<button id="saveSettingsBtn" style="width:100%; padding:12px; background:#007aff; color:white; border:none; border-radius:10px; font-size:16px; margin-bottom: 12px;">保存する</button>
+        <button id="saveSettingsBtn" style="width:100%; padding:12px; background:#007aff; color:white; border:none; border-radius:10px; font-size:16px; margin-bottom: 12px;">保存する</button>
         
         <button id="logoutBtn" style="width:100%; padding:12px; background:#ff3b30; color:white; border:none; border-radius:10px; font-size:16px; font-weight: bold; cursor: pointer; margin-bottom: 30px;">ログアウト</button>
 
@@ -194,7 +193,7 @@
     var activeRoomId = null;
     var isGroupMode = false;
     var focusedMsgId = null;
-    var toastTargetRoomId = null; // ポップアップタップ用
+    var toastTargetRoomId = null;
 
     var OFFICIAL_EMAIL = "official@airtext.com";
 
@@ -205,9 +204,7 @@
         });
     }
 
-    // 【強化】ポップアップ表示＋バイブレーション関数
     function triggerPopupNotification(sender, messageText, roomId) {
-        // 自分がそのチャット画面を開いている時はポップアップを出さない
         if (activeRoomId === roomId) return;
 
         var senderName = sender === OFFICIAL_EMAIL ? "AirText公式" : sender;
@@ -219,23 +216,19 @@
         var toast = document.getElementById('toastNotification');
         toast.classList.add('show');
 
-        // スマホのバイブレーションを動作させる（2回ぶるぶるさせる）
         if (navigator.vibrate) {
             navigator.vibrate([150, 100, 150]);
         }
 
-        // 4秒後に自動で引っ込める
         setTimeout(function() {
             toast.classList.remove('show');
         }, 4000);
     }
 
-    // ポップアップをタップしたらそのチャット画面に直接ジャンプする処理
     window.clickToast = function() {
         if (!toastTargetRoomId) return;
         document.getElementById('toastNotification').classList.remove('show');
         
-        // リンクデータから情報を引っ張ってチャットを開く
         db.collection("contact_links").doc(toastTargetRoomId).get().then(function(doc) {
             if (doc.exists) {
                 var data = doc.data();
@@ -364,7 +357,7 @@
                 }
                 show('homeView');
                 listenContacts();
-                setupGlobalMessageListener(); // 【追加】全体メッセージ監視を開始
+                setupGlobalMessageListener();
             });
         } else {
             show('loginView');
@@ -443,7 +436,7 @@
                         var pData = pSnap.data();
                         if (pData) {
                             var avEl = document.getElementById('av-'+safeId);
-                            if (pData.avatar && avEl) { avEl.innerHTML = ""; var img = document.createElement('img'); img.src = pData.avatar; img.className="avatar"; img.style.margin="0"; avEl.appendChild(img); }
+                            if (pData.avatar && avEl) { avEl.innerHTML = ""; var img = document.createElement('img'); img.src = pData.avatar; img.className="avatar"; img.style.margin="0"; avEl.appendChild(img); avEl.style.display = "flex"; }
                         }
                     });
                     
@@ -477,24 +470,20 @@
         });
     }
 
-    // 【追加】バックグラウンド/別画面時の全メッセージリアルタイム監視ロジック
     var activeListeners = {};
     function setupGlobalMessageListener() {
         db.collection("contact_links").where("users", "array-contains", me.email).onSnapshot(function(snap) {
             snap.forEach(function(d) {
                 var roomId = d.id;
-                if (activeListeners[roomId]) return; // 既に監視中の部屋はスルー
+                if (activeListeners[roomId]) return;
 
-                // 各部屋のメッセージコレクションの最新1件を監視
                 activeListeners[roomId] = db.collection("rooms").doc(roomId).collection("messages")
                     .orderBy("time", "desc").limit(1).onSnapshot(function(mSnap) {
                         mSnap.docChanges().forEach(function(change) {
                             if (change.type === "added") {
                                 var msgData = change.doc.data();
-                                // アプリ起動直後の古いメッセージの読み込みや、自分の送信は無視
                                 if (msgData.time < Date.now() - 5000 || msgData.sender === me.email) return;
 
-                                // ポップアップとバイブレーションを発動
                                 var displayMsg = msgData.msgType === "image" ? "📷 画像を受信しました" : msgData.text;
                                 triggerPopupNotification(msgData.sender, displayMsg, roomId);
                             }
@@ -527,7 +516,7 @@
         titleEl.onclick = function() {
             if(isGroupMode) return;
             var currentAlias = titleEl.innerText;
-            var newAlias = prompt("この相手のあなた専用の呼び名（お母さん、妹など）を入力してください:", currentAlias);
+            var newAlias = prompt("この相手のあなた専用 of 呼び名（お母さん、妹など）を入力してください:", currentAlias);
             if(newAlias !== null) {
                 db.collection("my_nicknames").doc(me.email).collection("targets").doc(targetEmail).set({ alias: newAlias.trim() });
             }
@@ -592,17 +581,22 @@
                 meta.className = "msg-meta";
                 var timeStr = formatTime(data.time);
                 
-                if (isMe) {
-                    var readText = (partnerInRoom || data.isRead) ? "既読 " : "";
-                    meta.innerText = (isGroupMode ? "" : readText) + timeStr;
-                    if (partnerInRoom && !data.isRead) {
-                        db.collection("rooms").doc(activeRoomId).collection("messages").doc(msgId).update({ isRead: true });
+                // 既読表示の修正：送信時に自分を入れなくなったので、配列の数でダイレクトに判定可能
+                let readLabel = "";
+                if (isMe && data.readBy) {
+                    var readCount = data.readBy.length;
+                    if(readCount > 0) {
+                        readLabel = isGroupMode ? `既読 ${readCount} ` : "既読 ";
                     }
-                } else {
-                    meta.innerText = timeStr;
-                    if (!data.isRead) {
-                        db.collection("rooms").doc(activeRoomId).collection("messages").doc(msgId).update({ isRead: true });
-                    }
+                }
+                
+                meta.innerText = readLabel + timeStr;
+
+                // 既読処理の修正：相手が送ってきた未読メッセージを開いたら、読んだ人として自分を追加
+                if (!isMe && (!data.readBy || !data.readBy.includes(me.email))) {
+                    db.collection("rooms").doc(activeRoomId).collection("messages").doc(msgId).update({
+                        readBy: firebase.firestore.FieldValue.arrayUnion(me.email)
+                    });
                 }
 
                 var heartBadge = document.createElement('div');
@@ -697,12 +691,13 @@
         var text = input.value.trim();
         if (!text || !activeRoomId) return;
 
+        // 修正：送信した瞬間は自分を入れず、相手がいれば相手、いなければ空の配列で構築
         var msgData = {
             text: text,
             sender: me.email,
             time: Date.now(),
             msgType: "text",
-            isRead: partnerInRoom,
+            readBy: partnerInRoom ? [targetEmail] : [],
             reactions: {}
         };
         input.value = "";
@@ -720,27 +715,30 @@
         document.getElementById('imageFileInput').click();
     };
 
+    // 📸【Base64無料版に修正】Storageを使わずFirestoreへ直接画像データを保存
     document.getElementById('imageFileInput').onchange = function(e) {
         var file = e.target.files[0];
-        if(!file) return;
+        if(!file || !activeRoomId) return;
 
-        var storageRef = storage.ref('airtext_photos/' + activeRoomId + '/' + Date.now() + '_' + file.name);
-        
-        storageRef.put(file).then(function(snapshot) {
-            return snapshot.ref.getDownloadURL();
-        }).then(function(downloadURL) {
+        var reader = new FileReader();
+        reader.onload = function() {
+            var base64Data = reader.result;
+
             var msgData = {
-                url: downloadURL,
+                url: base64Data,
                 sender: me.email,
                 time: Date.now(),
                 msgType: "image",
-                isRead: partnerInRoom,
+                readBy: partnerInRoom ? [targetEmail] : [],
                 reactions: {}
             };
-            db.collection("rooms").doc(activeRoomId).collection("messages").add(msgData);
-        }).catch(function(err) {
-            alert("画像の送信に失敗しました: " + err.message);
-        });
+
+            db.collection("rooms").doc(activeRoomId).collection("messages").add(msgData)
+            .catch(function(err) {
+                alert("画像の送信に失敗しました: " + err.message);
+            });
+        };
+        reader.readAsDataURL(file);
     };
 
     document.getElementById('sendBtn').onclick = send;
