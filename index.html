@@ -12,19 +12,19 @@
 
     <style>
         /* =========================================
-           🎨 Apple Style: Liquid Glass Theme (AirText v1.2.0)
+           🎨 Apple Style: Liquid Glass Theme (AirText v1.2.1)
            ========================================= */
         :root {
             --primary-color: #007aff;
-            --bg-main: #e2e8f0; /* 背景をSoundDeckに合わせた立体感のある淡いグレーに */
-            --panel-bg: rgba(255, 255, 255, 0.45); /* 透過ガラス */
-            --panel-bg-dark: rgba(255, 255, 255, 0.65); /* 濃いめのガラス */
-            --glass-stroke: rgba(255, 255, 255, 0.4); /* ガラスの反射フチ */
-            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08); /* 柔らかな極上シャドウ */
+            --bg-main: #e2e8f0; 
+            --panel-bg: rgba(255, 255, 255, 0.45); 
+            --panel-bg-dark: rgba(255, 255, 255, 0.65); 
+            --glass-stroke: rgba(255, 255, 255, 0.4); 
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08); 
             --text-main: #1d1d1f;
             --text-muted: #86868b;
             --bubble-sent: #007aff;
-            --bubble-received: rgba(255, 255, 255, 0.6); /* 受信バブルもすりガラスに */
+            --bubble-received: rgba(255, 255, 255, 0.6); 
         }
 
         html, body { 
@@ -48,7 +48,7 @@
             flex-direction: column; 
         }
         
-        /* ログイン画面（ダークガラス調） */
+        /* ログイン画面 */
         #loginView { 
             background: linear-gradient(135deg, #1c1c1e 0%, #000000 100%); 
             color: white; 
@@ -107,7 +107,7 @@
         }
         .switch-link { color: #64d2ff; cursor: pointer; text-decoration: underline; font-size: 14px; }
 
-        /* ホーム画面 & 各種ヘッダー（極上すりガラス） */
+        /* ホーム画面 & 各種ヘッダー */
         #homeView { background: var(--bg-main); }
         .header { 
             padding: 15px 20px; 
@@ -130,7 +130,7 @@
             padding: 12px; 
         }
         
-        /* リストアイテム（フローティングガラスカード） */
+        /* リストアイテム */
         .contact-item { 
             padding: 14px 18px; 
             background: var(--panel-bg);
@@ -222,7 +222,7 @@
         .msg-container.sent { align-self: flex-end; align-items: flex-end; }
         .msg-container.received { align-self: flex-start; align-items: flex-start; }
         
-        /* メッセージバブル（Liquid Glass加工） */
+        /* メッセージバブル */
         .msg { 
             padding: 11px 16px; 
             border-radius: 20px; 
@@ -296,7 +296,7 @@
         .emoji-opt:active { transform: scale(1.3); }
         .menu-opt { padding: 12px; color: #ff3b30; font-weight: 600; text-align: center; cursor: pointer; font-size: 15px; }
         
-        /* 入力バー（すりガラス） */
+        /* 入力バー */
         .input-bar { 
             padding: 10px 15px; 
             background: var(--panel-bg);
@@ -438,7 +438,7 @@
         <button id="logoutBtn" style="width:100%; padding:12px; background:rgba(255,59,48,0.15); color:#ff3b30; border:none; border-radius:12px; font-size:16px; font-weight: bold; cursor: pointer; margin-bottom: 30px;">ログアウト</button>
 
         <div style="font-size: 13px; color: var(--text-muted); text-align: center; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 15px;">
-            AirText バージョン 1.2.0
+            AirText バージョン 1.2.1
         </div>
     </div>
 </div>
@@ -483,6 +483,65 @@
 
     var OFFICIAL_EMAIL = "official@airtext.com";
 
+    // 【v1.2.1 強化要素】ユーザーインタラクション時にAudioContextを安全に初期化
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+    // 画面タップやクリック時にいつでも音が出せるようフック
+    window.addEventListener('click', initAudio, { once: false });
+    window.addEventListener('touchstart', initAudio, { once: false });
+
+    // 【v1.2.1 強化要素】高音質で心地よいApple風の「ピコーン」和音サウンド
+    function playNotificationSound() {
+        try {
+            initAudio(); // 再度状態を確認
+            if (!audioCtx) return;
+
+            var now = audioCtx.currentTime;
+            
+            // 1音目（高音）
+            var osc1 = audioCtx.createOscillator();
+            var gain1 = audioCtx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(880.00, now); // A5の音
+            osc1.frequency.setValueAtTime(1318.51, now + 0.08); // E6へ素早くスライド
+            
+            // 2音目（和音としての深みを追加）
+            var osc2 = audioCtx.createOscillator();
+            var gain2 = audioCtx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(1046.50, now + 0.04); // C6の音をわずかに遅らせて重ねる
+
+            // 音量の調整（優しく響くように急速に減衰）
+            gain1.gain.setValueAtTime(0.12, now);
+            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+            gain2.gain.setValueAtTime(0.08, now + 0.04);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+            // 接続
+            osc1.connect(gain1);
+            gain1.connect(audioCtx.destination);
+            
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+
+            // 再生開始と停止
+            osc1.start(now);
+            osc1.stop(now + 0.3);
+            
+            osc2.start(now + 0.04);
+            osc2.stop(now + 0.35);
+        } catch(e) {
+            console.error("音声再生エラー: ", e);
+        }
+    }
+
     function activateLinks(text) {
         var urlRegex = /(https?:\/\/[^\s]+)/g;
         return text.replace(urlRegex, function(url) {
@@ -500,6 +559,9 @@
 
         var toast = document.getElementById('toastNotification');
         toast.classList.add('show');
+
+        // 【v1.2.1】ポップアップ表示と確実に連動して通知音を鳴らす
+        playNotificationSound();
 
         if (navigator.vibrate) {
             navigator.vibrate([150, 100, 150]);
@@ -528,22 +590,6 @@
         });
     };
 
-    function playNotificationSound() {
-        try {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            var osc = audioCtx.createOscillator();
-            var gain = audioCtx.createGain();
-            osc.connect(gain); 
-            gain.connect(audioCtx.destination);
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-            osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.1);
-            gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.35);
-        } catch(e) {}
-    }
-
     function formatTime(timestamp) {
         if (!timestamp) return "";
         var d = new Date(timestamp);
@@ -563,6 +609,7 @@
     }
 
     document.getElementById('googleLoginBtn').onclick = function() {
+        initAudio();
         var provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithRedirect(provider);
     };
@@ -581,6 +628,7 @@
     };
 
     document.getElementById('mainAuthBtn').onclick = function() {
+        initAudio();
         var emailStr = document.getElementById('email').value.trim();
         var pwStr = document.getElementById('pw').value.trim();
         if(!emailStr || !pwStr) return alert("入力してください");
@@ -649,7 +697,7 @@
         }
     });
 
-    document.getElementById('toSettingsBtn').onclick = function() { show('settingsView'); };
+    document.getElementById('toSettingsBtn').onclick = function() { initAudio(); show('settingsView'); };
     document.getElementById('backFromSettings').onclick = function() { show('homeView'); };
 
     document.getElementById('avatarInput').onchange = function(e) {
@@ -683,6 +731,7 @@
     };
 
     document.getElementById('addBtn').onclick = function() {
+        initAudio();
         var mail = prompt("追加する相手のメールアドレスを入力:");
         if (!mail || mail === me.email) return;
         var linkId = [me.email, mail].sort().join("_");
@@ -690,6 +739,7 @@
     };
 
     document.getElementById('makeGroupBtn').onclick = function() {
+        initAudio();
         var gName = prompt("作成するグループ名を入力してください:");
         if(!gName) return;
         var mails = prompt("参加させるメンバーのメールアドレスをカンマ(,)区切りで入力してください:\n(例: friend1@test.com, friend2@test.com)");
@@ -757,11 +807,12 @@
                     if (status && status.unread && (status.unread === me.email || (isGroup && status.unread === "group_update"))) {
                          if (!b) {
                             b = document.createElement('div'); b.className = "badge"; b.innerText = "新着"; item.appendChild(b);
+                            // リスト更新での通知音トリガー
                             if (!firstLoad) { playNotificationSound(); }
                          }
                     } else { if (b) b.remove(); }
                 });
-                item.onclick = function() { openChat(roomId, isGroup, other, data.groupName); };
+                item.onclick = function() { initAudio(); openChat(roomId, isGroup, other, data.groupName); };
                 list.appendChild(item);
             });
             firstLoad = false;
@@ -915,6 +966,7 @@
     }
 
     function popupMenu(x, y, msgId, isMe) {
+        initAudio();
         focusedMsgId = msgId;
         var menu = document.getElementById('msgMenu');
         menu.style.display = 'flex';
@@ -997,6 +1049,7 @@
     }
 
     document.getElementById('clipBtn').onclick = function() {
+        initAudio();
         document.getElementById('imageFileInput').click();
     };
     document.getElementById('imageFileInput').onchange = function(e) {
