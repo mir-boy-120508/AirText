@@ -1,10 +1,10 @@
 {
   "name": "AirText",
   "short_name": "AirText",
-  "start_url": "index.html",
+  "start_url": "./",
   "display": "standalone",
-  "background_color": "#e2e8f0",
-  "theme_color": "#ff2d55",
+  "background_color": "#f2f2f7",
+  "theme_color": "#007aff",
   "icons": [
     {
       "src": "logo.png",
