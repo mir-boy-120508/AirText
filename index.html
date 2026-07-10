@@ -73,6 +73,15 @@
         #settingsView { background: var(--bg-color); padding: 30px; align-items: center; flex-direction: column; }
         .setting-box { width: 100%; max-width: 350px; text-align: center; margin-top: 50px; }
         .setting-box input[type="text"] { width: 100%; padding: 12px; margin: 20px 0; border: 1px solid rgba(0,0,0,0.1); border-radius: 10px; font-size: 16px; box-sizing: border-box; background: var(--card-bg); color: var(--text-main); }
+
+        /* 【追加】画面内ポップアップ通知（トースト）のスタイル */
+        #toastNotification {
+            position: fixed; top: -100px; left: 5%, width: 90%; max-width: 400px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85); color: white; padding: 15px 20px; border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 10000; font-size: 15px; display: flex; flex-direction: column; gap: 4px;
+            transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); cursor: pointer;
+        }
+        #toastNotification.show { top: 20px; }
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -81,6 +90,11 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 </head>
 <body>
+
+<div id="toastNotification" onclick="clickToast()">
+    <div id="toastSender" style="font-weight: bold; color: #30b0c7; font-size: 13px;"></div>
+    <div id="toastText" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+</div>
 
 <div class="view" id="loginView">
     <div class="login-box">
@@ -176,8 +190,8 @@
     var activeRoomId = null;
     var isGroupMode = false;
     var focusedMsgId = null;
+    var toastTargetRoomId = null; // ポップアップタップ用
 
-    // 【追加】公式アカウントの定義
     var OFFICIAL_EMAIL = "official@airtext.com";
 
     function activateLinks(text) {
@@ -186,6 +200,50 @@
             return '<a href="' + url + '" target="_blank">' + url + '</a>';
         });
     }
+
+    // 【強化】ポップアップ表示＋バイブレーション関数
+    function triggerPopupNotification(sender, messageText, roomId) {
+        // 自分がそのチャット画面を開いている時はポップアップを出さない
+        if (activeRoomId === roomId) return;
+
+        var senderName = sender === OFFICIAL_EMAIL ? "AirText公式" : sender;
+        toastTargetRoomId = roomId;
+
+        document.getElementById('toastSender').innerText = "💬 " + senderName;
+        document.getElementById('toastText').innerText = messageText;
+
+        var toast = document.getElementById('toastNotification');
+        toast.classList.add('show');
+
+        // スマホのバイブレーションを動作させる（2回ぶるぶるさせる）
+        if (navigator.vibrate) {
+            navigator.vibrate([150, 100, 150]);
+        }
+
+        // 4秒後に自動で引っ込める
+        setTimeout(function() {
+            toast.classList.remove('show');
+        }, 4000);
+    }
+
+    // ポップアップをタップしたらそのチャット画面に直接ジャンプする処理
+    window.clickToast = function() {
+        if (!toastTargetRoomId) return;
+        document.getElementById('toastNotification').classList.remove('show');
+        
+        // リンクデータから情報を引っ張ってチャットを開く
+        db.collection("contact_links").doc(toastTargetRoomId).get().then(function(doc) {
+            if (doc.exists) {
+                var data = doc.data();
+                var isGroup = (data.type === "group");
+                var other = "";
+                if (!isGroup) {
+                    other = data.users[0] === me.email ? data.users[1] : data.users[0];
+                }
+                openChat(toastTargetRoomId, isGroup, other, data.groupName || "");
+            }
+        });
+    };
 
     function playNotificationSound() {
         try {
@@ -247,24 +305,20 @@
         if (isSignUpMode) {
             auth.createUserWithEmailAndPassword(emailStr, pwStr)
                 .then(function(userCredential) {
-                    // 【追加】新規登録成功時の公式アカウント紐付けと初期メッセージの自動送信
                     var newUserEmail = userCredential.user.email;
                     var linkId = [newUserEmail, OFFICIAL_EMAIL].sort().join("_");
                     
-                    // 1. profilesコレクションに初期枠を作成（一斉送信時に漏れないようにするため）
                     db.collection("profiles").doc(newUserEmail).set({
                         name: newUserEmail.split("@")[0],
                         avatar: ""
                     }, { merge: true });
 
-                    // 2. 公式とのつながりを自動作成
                     db.collection("contact_links").doc(linkId).set({
                         users: [newUserEmail, OFFICIAL_EMAIL],
                         type: "direct",
                         time: Date.now()
                     });
 
-                    // 3. 公式からのウェルカムメッセージを送信
                     db.collection("rooms").doc(linkId).collection("messages").add({
                         text: "AirTextへようこそ！ここには公式からの大切なお知らせが届きます。まずは友達を追加してチャットを始めてみましょう！",
                         sender: OFFICIAL_EMAIL,
@@ -274,7 +328,6 @@
                         reactions: {}
                     });
 
-                    // 4. 新着バッジを点灯させる
                     db.collection("room_status").doc(linkId).set({
                         unread: newUserEmail
                     }, { merge: true });
@@ -300,7 +353,6 @@
                     document.getElementById('nicknameInput').value = myName;
                     if (myAvatar) document.getElementById('myAvatarPreview').src = myAvatar;
                 } else {
-                    // プロフィール情報がない場合、初期値を設定して保存
                     db.collection("profiles").doc(me.email).set({
                         name: me.email.split("@")[0],
                         avatar: ""
@@ -308,6 +360,7 @@
                 }
                 show('homeView');
                 listenContacts();
+                setupGlobalMessageListener(); // 【追加】全体メッセージ監視を開始
             });
         } else {
             show('loginView');
@@ -396,7 +449,6 @@
                             if(nSnap.exists && nSnap.data().alias) {
                                 nmEl.innerText = nSnap.data().alias;
                             } else {
-                                // 公式アカウントのデフォルト表示名を「AirText公式」に設定
                                 nmEl.innerText = (other === OFFICIAL_EMAIL) ? "AirText公式" : other;
                             }
                         }
@@ -418,6 +470,33 @@
                 list.appendChild(item);
             });
             firstLoad = false;
+        });
+    }
+
+    // 【追加】バックグラウンド/別画面時の全メッセージリアルタイム監視ロジック
+    var activeListeners = {};
+    function setupGlobalMessageListener() {
+        db.collection("contact_links").where("users", "array-contains", me.email).onSnapshot(function(snap) {
+            snap.forEach(function(d) {
+                var roomId = d.id;
+                if (activeListeners[roomId]) return; // 既に監視中の部屋はスルー
+
+                // 各部屋のメッセージコレクションの最新1件を監視
+                activeListeners[roomId] = db.collection("rooms").doc(roomId).collection("messages")
+                    .orderBy("time", "desc").limit(1).onSnapshot(function(mSnap) {
+                        mSnap.docChanges().forEach(function(change) {
+                            if (change.type === "added") {
+                                var msgData = change.doc.data();
+                                // アプリ起動直後の古いメッセージの読み込みや、自分の送信は無視
+                                if (msgData.time < Date.now() - 5000 || msgData.sender === me.email) return;
+
+                                // ポップアップとバイブレーションを発動
+                                var displayMsg = msgData.msgType === "image" ? "📷 画像を受信しました" : msgData.text;
+                                triggerPopupNotification(msgData.sender, displayMsg, roomId);
+                            }
+                        });
+                    });
+            });
         });
     }
 
