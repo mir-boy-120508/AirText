@@ -193,6 +193,9 @@ window.onerror = function(msg, url, line) {
     var isGroupMode = false;
     var focusedMsgId = null;
     var toastTargetRoomId = null; 
+    
+    // 【修正】エラーの原因だった変数定義をここにしっかりと追加しました！
+    var activeListeners = {}; 
 
     var OFFICIAL_EMAIL = "official@airtext.com";
 
@@ -539,8 +542,7 @@ window.onerror = function(msg, url, line) {
                 var msgId = d.id;
                 var isMe = (data.sender === me.email);
                 
-                // 【バグB修正】受信時・閲覧時のリアルタイム監視内で既読を反映
-                // 相手から送られてきた未読メッセージを自分が開いた場合、自分のアドレスをreadByに追加
+                // 【バグB修正】受信時：未読を自分が開いたら、自分のアドレスをreadByへ追加
                 var readByArray = data.readBy || [];
                 if (!isMe && !readByArray.includes(me.email)) {
                     db.collection("rooms").doc(activeRoomId).collection("messages").doc(msgId).update({
@@ -581,8 +583,7 @@ window.onerror = function(msg, url, line) {
                 meta.className = "msg-meta";
                 var timeStr = formatTime(data.time);
 
-                // 【バグB修正】表示時のロジック簡素化
-                // 自分が送信したメッセージで、配列（readBy）に相手のアドレスが1つでも入っていれば「既読」と判定
+                // 【バグB修正】表示時：配列（readBy）に相手のアドレスが1つでも入っていれば既読
                 if (isMe) {
                     var isRead = readByArray.length > 0;
                     var readText = isRead ? "既読 " : "";
@@ -682,8 +683,7 @@ window.onerror = function(msg, url, line) {
         var text = input.value.trim();
         if (!text || !activeRoomId) return;
 
-        // 【バグB修正】送信時：readByには自分のアドレスを絶対に入れない
-        // もし相手がすでに同室（partnerInRoom）していれば最初から相手のアドレスを配列に、そうでなければ空配列 [] で送信
+        // 【バグB修正】送信時：readByの初期化（自分は含めない）
         var initialReadBy = [];
         if (partnerInRoom && targetEmail) {
             initialReadBy.push(targetEmail);
@@ -712,23 +712,22 @@ window.onerror = function(msg, url, line) {
         document.getElementById('imageFileInput').click();
     };
 
-    // 【バグA修正】Storageへのアップロードを廃止し、完全無料でFirestoreにBase64保存
+    // 【バグA修正】完全無料でFirestoreに直接Base64保存
     document.getElementById('imageFileInput').onchange = function(e) {
         var file = e.target.files[0];
         if(!file) return;
 
         var reader = new FileReader();
         reader.onload = function(event) {
-            var base64Data = event.target.result; // 画像のBase64文字列を取得
+            var base64Data = event.target.result;
 
-            // 【バグB修正】送信時のreadBy配列の初期設定
             var initialReadBy = [];
             if (partnerInRoom && targetEmail) {
                 initialReadBy.push(targetEmail);
             }
 
             var msgData = {
-                url: base64Data, // data:image/...形式の文字列を直接urlに格納
+                url: base64Data, 
                 sender: me.email,
                 time: Date.now(),
                 msgType: "image",
@@ -743,10 +742,10 @@ window.onerror = function(msg, url, line) {
                     db.collection("room_status").doc(activeRoomId).set({ unread: "group_update" }, { merge: true });
                 }
             }).catch(function(err) {
-                alert("Firestoreへの画像データ保存に失敗しました: " + err.message);
+                alert("画像の送信に失敗しました: " + err.message);
             });
         };
-        reader.readAsDataURL(file); // 画像をBase64データURLとして読み込む
+        reader.readAsDataURL(file); 
     };
 
     document.getElementById('sendBtn').onclick = send;
@@ -767,6 +766,5 @@ window.onerror = function(msg, url, line) {
             });
         }
     };
-</script>
 </body>
 </html>
