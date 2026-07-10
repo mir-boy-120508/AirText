@@ -22,163 +22,151 @@
         }
 
         html, body { height: 100%; margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg-color); overflow: hidden; color: var(--text-main); }
-        .view { display: none; height: 100vh; width: 100%; position: absolute; top: 0; left: 0; box-sizing: border-box; flex-direction: column; background: var(--bg-color); }
+        .view { display: none; height: 100vh; width: 100%; position: absolute; top: 0; left: 0; box-sizing: border-box; flex-direction: column; }
         
-        .header { height: 44px; background: var(--card-bg); border-bottom: 0.5px solid #c8c7cc; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font-weight: 600; font-size: 17px; z-index: 10; box-sizing: border-box; }
-        .header button { background: none; border: none; color: var(--primary-color); font-size: 16px; cursor: pointer; padding: 0; font-weight: 400; }
+        #loginView { background: #000; color: white; justify-content: center; align-items: center; }
+        .login-box { width: 320px; text-align: center; padding: 20px; margin: auto; }
+        .login-box input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: none; background: #1c1c1e; color: white; font-size: 16px; -webkit-appearance: none; box-sizing: border-box; }
+        .login-box button { width: 100%; padding: 15px; border-radius: 12px; border: none; background: var(--primary-color); color: white; font-size: 16px; cursor: pointer; margin-bottom: 12px; font-weight: bold; }
+        .google-btn { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #ddd; background: white; color: #333; font-size: 16px; cursor: pointer; margin-bottom: 15px; font-weight: bold; }
+        .switch-link { color: var(--primary-color); cursor: pointer; text-decoration: underline; font-size: 14px; }
+
+        #homeView { background: var(--bg-color); }
+        .header { padding: 15px 20px; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); height: 60px; box-sizing: border-box; }
+        .contact-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 10px 0; }
         
-        #loginView { justify-content: center; align-items: center; padding: 20px; }
-        .auth-box { background: var(--card-bg); border-radius: 12px; padding: 24px; width: 100%; max-width: 340px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); box-sizing: border-box; text-align: center; }
-        .auth-box h2 { margin: 0 0 20px 0; font-size: 24px; font-weight: 700; }
-        .auth-box input { width: 100%; height: 44px; background: #f2f2f7; border: none; border-radius: 8px; padding: 0 12px; margin-bottom: 12px; box-sizing: border-box; font-size: 15px; }
-        .auth-box button.main-btn { width: 100%; height: 44px; background: var(--primary-color); border: none; border-radius: 8px; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px; }
-        .auth-box button.google-btn { width: 100%; height: 44px; background: #fff; border: 1px solid #dcdcdc; border-radius: 8px; color: #333; font-size: 15px; font-weight: 500; cursor: pointer; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .auth-box .switch-mode { margin-top: 16px; font-size: 13px; color: var(--primary-color); cursor: pointer; }
+        .contact-item { padding: 12px 20px; border-bottom: 1px solid rgba(0,0,0,0.03); display: flex; align-items: center; cursor: pointer; position: relative; background: var(--card-bg); margin: 0 0 1px 0; }
+        .avatar { width: 48px; height: 48px; background: #ccc; border-radius: 50%; margin-right: 15px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 18px; object-fit: cover; overflow: hidden; }
+        .badge { position: absolute; right: 25px; background: #ff3b30; color: white; padding: 3px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; }
+        .add-btn { position: absolute; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 30px; box-shadow: 0 4px 12px rgba(0,122,255,0.3); cursor: pointer; z-index: 99; font-weight: 300; }
+        .icon-btn { font-size: 22px; cursor: pointer; background: none; border: none; padding: 5px; color: var(--text-main); display: flex; align-items: center; justify-content: center; }
 
-        .list-container { flex: 1; overflow-y: auto; padding: 12px 0; }
-        .contact-item { background: var(--card-bg); padding: 12px 16px; display: flex; align-items: center; border-bottom: 0.5px solid #e5e5ea; cursor: pointer; position: relative; }
-        .contact-item:active { background: #e5e5ea; }
-        .contact-item .avatar { width: 45px; height: 45px; border-radius: 50%; background: #007aff; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 600; margin-right: 12px; overflow: hidden; }
-        .contact-item .avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .contact-item .badge { position: absolute; right: 16px; background: #ff3b30; color: #fff; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
-
-        .msg-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: #f2f2f7; }
-        .msg-container { display: flex; flex-direction: column; max-width: 75%; position: relative; margin-bottom: 4px; }
+        #chatView { background: var(--bg-color); }
+        .chat-header { padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); height: 60px; box-sizing: border-box; }
+        .message-area { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; }
+        
+        .msg-container { max-width: 75%; margin-bottom: 14px; display: flex; flex-direction: column; position: relative; }
         .msg-container.sent { align-self: flex-end; align-items: flex-end; }
         .msg-container.received { align-self: flex-start; align-items: flex-start; }
         
-        .msg { padding: 10px 14px; border-radius: 16px; font-size: 16px; line-height: 1.4; word-break: break-all; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .sent .msg { background: var(--bubble-sent); color: #fff; border-bottom-right-radius: 4px; }
-        .received .msg { background: var(--card-bg); color: #text-main; border-bottom-left-radius: 4px; }
-        .msg img { max-width: 100%; max-height: 200px; border-radius: 12px; display: block; margin-top: 4px; }
-        .msg a { color: inherit; text-decoration: underline; }
-
-        .msg-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; padding: 0 4px; }
-
-        .input-bar { background: var(--card-bg); border-top: 0.5px solid #c8c7cc; padding: 8px; display: flex; align-items: center; gap: 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); box-sizing: border-box; }
-        .input-bar input { flex: 1; height: 36px; background: #f2f2f7; border: 0.5px solid #c8c7cc; border-radius: 18px; padding: 0 14px; box-sizing: border-box; font-size: 16px; }
-        .input-bar button { background: none; border: none; color: var(--primary-color); font-size: 24px; cursor: pointer; padding: 0; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
-        .input-bar button#sendBtn { font-size: 16px; font-weight: 600; width: auto; padding: 0 8px; }
-
-        #settingsView { overflow-y: auto; padding-bottom: 40px; box-sizing: border-box; }
-        .settings-content { padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%; box-sizing: border-box; }
-        .settings-avatar-container { position: relative; width: 100px; height: 100px; cursor: pointer; }
-        .settings-avatar-container .avatar-preview { width: 100px; height: 100px; border-radius: 50%; background: #ccc; object-fit: cover; display: block; }
-        .settings-avatar-container .camera-icon { position: absolute; bottom: 0; right: 0; background: var(--primary-color); color: #fff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid #fff; }
-        .settings-input { width: 100%; max-width: 300px; height: 44px; background: var(--card-bg); border: 0.5px solid #c8c7cc; border-radius: 8px; padding: 0 12px; box-sizing: border-box; font-size: 16px; text-align: center; }
+        .msg { padding: 10px 16px; border-radius: 18px; font-size: 16px; line-height: 1.4; word-wrap: break-word; white-space: pre-wrap; user-select: none; -webkit-user-select: none; cursor: pointer; position: relative; transition: opacity 0.2s; }
+        .sent .msg { background: var(--bubble-sent); color: white; border-bottom-right-radius: 4px; }
+        .received .msg { background: var(--bubble-received); color: var(--text-main); border-bottom-left-radius: 4px; }
+        .msg img { max-width: 100%; border-radius: 12px; display: block; margin-top: 5px; }
+        .msg a { color: inherit; text-decoration: underline; font-weight: 600; }
         
-        .danger-btn { width: 100%; max-width: 300px; height: 44px; background: #ff3b30; border: none; border-radius: 8px; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 20px; }
-        .save-btn { width: 100%; max-width: 300px; height: 44px; background: #34c759; border: none; border-radius: 8px; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .msg-meta { font-size: 11px; color: var(--text-muted); margin-top: 3px; display: flex; gap: 5px; padding: 0 4px; }
+        
+        .heart-badge { position: absolute; bottom: -8px; background: var(--card-bg); border: 1px solid rgba(0,0,0,0.05); border-radius: 10px; padding: 1px 5px; font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); pointer-events: none; display: flex; gap: 2px; z-index: 10; }
+        .sent .heart-badge { right: 10px; }
+        .received .heart-badge { left: 10px; }
 
-        .msg-menu { position: fixed; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); display: none; flex-direction: column; padding: 6px; z-index: 100; min-width: 180px; border: 0.5px solid rgba(0,0,0,0.1); }
-        .emoji-row { display: flex; justify-content: space-around; padding: 6px 4px; border-bottom: 0.5px solid #e5e5ea; margin-bottom: 4px; }
-        .emoji-opt { font-size: 22px; cursor: pointer; padding: 4px; transition: transform 0.1s; }
+        #msgMenu { display: none; position: fixed; background: rgba(255,255,255,0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); padding: 8px; z-index: 9999; flex-direction: column; width: 240px; box-sizing: border-box; border: 1px solid rgba(0,0,0,0.05); }
+        .emoji-row { display: flex; justify-content: space-around; padding-bottom: 8px; border-bottom: 1px solid rgba(0,0,0,0.05); margin-bottom: 5px; }
+        .emoji-opt { font-size: 26px; cursor: pointer; transition: transform 0.1s; padding: 4px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
         .emoji-opt:active { transform: scale(1.3); }
-        .menu-item { padding: 10px 12px; font-size: 15px; color: #000; cursor: pointer; border-radius: 6px; text-align: left; background: none; border: none; width: 100%; box-sizing: border-box; }
-        .menu-item:active { background: #e5e5ea; }
-        .menu-item.danger { color: #ff3b30; }
+        .menu-opt { padding: 12px; color: #ff3b30; font-weight: 600; text-align: center; cursor: pointer; font-size: 15px; }
+        
+        .input-bar { padding: 10px 15px; display: flex; background: var(--card-bg); border-top: 1px solid rgba(0,0,0,0.05); align-items: center; height: 60px; box-sizing: border-box; gap: 8px; }
+        .input-bar input[type="text"] { flex: 1; padding: 10px 16px; border: 1px solid rgba(0,0,0,0.1); border-radius: 20px; outline: none; font-size: 16px; -webkit-appearance: none; background: var(--bg-color); color: var(--text-main); }
 
-        .heart-badge { position: absolute; bottom: -8px; left: 10px; background: #fff; border: 0.5px solid #e5e5ea; border-radius: 10px; padding: 1px 5px; font-size: 11px; display: none; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 2; }
-        .sent .heart-badge { left: auto; right: 10px; }
+        #settingsView { background: var(--bg-color); padding: 30px; align-items: center; flex-direction: column; }
+        .setting-box { width: 100%; max-width: 350px; text-align: center; margin-top: 50px; padding-bottom: 40px; }
+        .setting-box input[type="text"] { width: 100%; padding: 12px; margin: 20px 0; border: 1px solid rgba(0,0,0,0.1); border-radius: 10px; font-size: 16px; box-sizing: border-box; background: var(--card-bg); color: var(--text-main); }
 
-        .toast-notification { position: fixed; top: -8px; left: 50%; transform: translateX(-50%) translateY(-100px); width: calc(100% - 24px); max-width: 360px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border-radius: 14px; box-shadow: 0 6px 22px rgba(0,0,0,0.12); padding: 12px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 2px; z-index: 9999; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 0.5px solid rgba(0,0,0,0.08); cursor: pointer; }
-        .toast-notification.show { transform: translateX(-50%) translateY(20px); }
-        .toast-sender { font-size: 13px; font-weight: 700; color: #000; }
-        .toast-text { font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-        .version-info { font-size: 13px; color: var(--text-muted); margin-top: 16px; text-align: center; width: 100%; }
+        #toastNotification {
+            position: fixed;
+            top: -100px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px;
+            background: rgba(0, 0, 0, 0.85); color: white; padding: 15px 20px; border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 10000; font-size: 15px; display: flex; flex-direction: column; gap: 4px;
+            transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); cursor: pointer;
+        }
+        #toastNotification.show { top: 20px; }
     </style>
-    
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 </head>
 <body>
 
-    <div id="toastNotification" class="toast-notification" onclick="clickToast()">
-        <div id="toastSender" class="toast-sender">💬 相手のメールアドレス</div>
-        <div id="toastText" class="toast-text">メッセージの内容がここに表示されます。</div>
-    </div>
+<div id="toastNotification" onclick="clickToast()">
+    <div id="toastSender" style="font-weight: bold; color: #30b0c7; font-size: 13px;"></div>
+    <div id="toastText" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+</div>
 
-    <div id="loginView" class="view" style="display: flex;">
-        <div class="auth-box">
-            <h2 id="authTitle">AirText</h2>
-            <input type="email" id="email" placeholder="メールアドレス" autocomplete="email">
-            <input type="password" id="pw" placeholder="パスワード">
-            <button class="main-btn" id="mainAuthBtn">ログイン</button>
-            <button class="google-btn" id="googleLoginBtn">
-                <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.47h4.84c-.21 1.12-.84 2.07-1.79 2.7v2.25h2.91c1.7-1.56 2.68-3.86 2.68-6.58z" fill="#4285F4"/><path d="M9 18c2.43 0 4.47-.8 5.96-2.22l-2.91-2.25c-.8.54-1.84.87-3.05.87-2.35 0-4.33-1.59-5.05-3.73H.95v2.33C2.43 15.89 5.5 18 9 18z" fill="#34A853"/><path d="M3.95 10.67c-.18-.54-.29-1.11-.29-1.67s.1-1.13.29-1.67V5H.95C.34 6.2.0 7.56.0 9s.34 2.8.95 4v-2.33l3-2z" fill="#FBBC05"/><path d="M9 3.58c1.32 0 2.5.45 3.44 1.35L15 2.05C13.47.63 11.43 0 9 0 5.5 0 2.43 2.11.95 4.93l3 2.33c.72-2.14 2.7-3.73 5.05-3.73z" fill="#EA4335"/></svg>
-                Googleでログイン
-            </button>
-            <div class="switch-mode" id="switchAuthMode">新しくアカウントを作る(Sign Up)</div>
-        </div>
+<div class="view" id="loginView">
+    <div class="login-box">
+        <h1 id="authTitle" style="font-size: 36px; margin-bottom: 30px; font-weight: 700; letter-spacing: -1px;">AirText</h1>
+        <button class="google-btn" id="googleLoginBtn">🌐 Googleログイン</button>
+        <div style="margin: 15px 0; color: #666; font-size: 14px;">または</div>
+        <input type="email" id="email" placeholder="メールアドレス">
+        <input type="password" id="pw" placeholder="パスワード">
+        <button id="mainAuthBtn">ログイン</button>
+        <div id="switchAuthMode" class="switch-link">新しくアカウントを作る(Sign Up)</div>
     </div>
+</div>
 
-    <div id="homeView" class="view">
-        <div class="header">
-            <button id="toSettingsBtn">設定</button>
-            <div>トーク</div>
-            <button id="addBtn">追加</button>
-        </div>
-        <div style="background:#fff; padding:8px 16px; border-bottom:0.5px solid #e5e5ea; display:flex; gap:8px;">
-            <button id="makeGroupBtn" style="background:var(--primary-color); border:none; color:#fff; padding:6px 12px; border-radius:6px; font-weight:600; font-size:13px; cursor:pointer;">👥 グループ作成</button>
-        </div>
-        <div class="list-container" id="contactList"></div>
-    </div>
-
-    <div id="chatView" class="view">
-        <div class="header">
-            <button id="backBtn">戻る</button>
-            <div id="chatTitle" style="cursor:pointer; max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">チャット相手</div>
-            <div style="width:32px;"></div>
-        </div>
-        <div class="msg-area" id="msgArea"></div>
-        <div class="input-bar">
-            <button id="clipBtn">📎</button>
-            <input type="text" id="msgInput" placeholder="メッセージを入力">
-            <button id="sendBtn">送信</button>
-        </div>
-        <input type="file" id="imageFileInput" accept="image/*" style="display: none;">
-    </div>
-
-    <div id="settingsView" class="view">
-        <div class="header">
-            <button id="backFromSettings">戻る</button>
-            <div>プロフィール設定</div>
-            <div style="width:32px;"></div>
-        </div>
-        <div class="settings-content">
-            <div class="settings-avatar-container" onclick="document.getElementById('avatarInput').click()">
-                <img id="myAvatarPreview" class="avatar-preview" src="">
-                <div class="camera-icon">📷</div>
-            </div>
-            <input type="file" id="avatarInput" accept="image/*" style="display:none;">
-            
-            <div style="width:100%; max-width:300px; text-align:left; font-size:13px; color:var(--text-muted); margin-bottom:-15px; padding-left:4px;">あなたの名前（ニックネーム）</div>
-            <input type="text" id="nicknameInput" class="settings-input" placeholder="名前を入力してください">
-            
-            <div style="width:100%; max-width:300px; text-align:left; font-size:13px; color:var(--text-muted); margin-bottom:-15px; padding-left:4px;">ログイン中のアカウント</div>
-            <div id="myEmail" style="width:100%; max-width:300px; background:#e5e5ea; padding:12px; border-radius:8px; box-sizing:border-box; font-size:14px; text-align:center; word-break:break-all;">-</div>
-            
-            <button class="save-btn" id="saveSettingsBtn">設定を保存</button>
-            <button class="danger-btn" id="logoutBtn">ログアウト</button>
-            
-            <div class="version-info">AirText バージョン 1.1.0</div>
+<div class="view" id="homeView">
+    <div class="header">
+        <button class="icon-btn" id="toSettingsBtn">⚙️</button>
+        <h2 style="margin:0; font-size:20px; font-weight: 700;">AirText</h2>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <button class="icon-btn" id="makeGroupBtn" style="font-size: 20px;">👥</button>
+            <div id="myEmail" style="font-size:12px; color:var(--text-muted); max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></div>
         </div>
     </div>
+    <div class="contact-list" id="contactList"></div>
+    <div class="add-btn" id="addBtn">+</div>
+</div>
 
-    <div id="msgMenu" class="msg-menu">
-        <div class="emoji-row">
-            <div class="emoji-opt">❤️</div>
-            <div class="emoji-opt">👍</div>
-            <div class="emoji-opt">😭</div>
-            <div class="emoji-opt">👏</div>
-            <div class="emoji-opt">😮</div>
-        </div>
-        <button class="menu-item danger" id="revokeBtn">送信を取り消す</button>
+<div class="view" id="chatView">
+    <div class="chat-header">
+        <button class="icon-btn" id="backBtn" style="width:32px;">◀</button>
+        <div id="chatTitle" style="font-weight:700; font-size:17px; cursor:pointer; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></div>
+        <div style="width:32px;"></div>
     </div>
+    <div class="message-area" id="msgArea"></div>
+    <div class="input-bar">
+        <button class="icon-btn" id="clipBtn" style="font-size: 20px; padding: 0 5px;">📎</button>
+        <input type="file" id="imageFileInput" accept="image/*" style="display:none;">
+        <input type="text" id="msgInput" placeholder="メッセージ">
+        <button id="sendBtn" style="background:var(--primary-color); color:white; border:none; width:36px; height:36px; border-radius:50%; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:bold;">↑</button>
+    </div>
+</div>
 
-    <script>
+<div class="view" id="settingsView">
+    <div class="chat-header" style="width:100%; position:absolute; top:0; left:0;">
+        <button class="icon-btn" id="backFromSettings">◀ 戻る</button>
+        <div style="font-weight:700;">プロフィール設定</div>
+        <div style="width:32px;"></div>
+    </div>
+    <div class="setting-box">
+        <label for="avatarInput" style="cursor: pointer;">
+            <img class="avatar" id="myAvatarPreview" style="width:110px; height:110px; margin:0 auto; background:#ccc; border: 2px solid #e5e5ea;" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100%' height='100%' fill='%23ccc'/></svg>">
+            <p style="font-size:13px; color:var(--primary-color); margin-top: 10px; font-weight: 500;">画像をタップして変更</p>
+        </label>
+        <input type="file" id="avatarInput" accept="image/*" style="display:none;">
+        <input type="text" id="nicknameInput" placeholder="ニックネームを入力">
+        <button id="saveSettingsBtn" style="width:100%; padding:12px; background:#007aff; color:white; border:none; border-radius:10px; font-size:16px; margin-bottom: 12px;">保存する</button>
+        
+        <button id="logoutBtn" style="width:100%; padding:12px; background:#ff3b30; color:white; border:none; border-radius:10px; font-size:16px; font-weight: bold; cursor: pointer; margin-bottom: 30px;">ログアウト</button>
+
+        <div style="font-size: 13px; color: var(--text-muted); text-align: center; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 15px;">
+            AirText バージョン 1.1.0
+        </div>
+    </div>
+</div>
+
+<div id="msgMenu">
+    <div class="emoji-row">
+        <span class="emoji-opt">❤️</span><span class="emoji-opt">👍</span><span class="emoji-opt">😂</span><span class="emoji-opt">😮</span><span class="emoji-opt">🙏</span>
+    </div>
+    <div class="menu-opt" id="revokeBtn">メッセージ送信取消</div>
+</div>
+
+<script>
     window.onerror = function(msg, url, line) {
         alert("プログラムエラー発生:\n" + msg + "\n行番号: " + line);
         return false;
@@ -196,7 +184,9 @@
     firebase.initializeApp(firebaseConfig);
     var db = firebase.firestore();
     var auth = firebase.auth();
-
+    var storage = firebase.storage();
+    
+    // 【最上部に移動】グローバル変数の定義をまとめてエラーを防ぐ
     var me = null, targetEmail = null, chatUnsub = null, statusUnsub = null;
     var myName = "", myAvatar = "";
     var isSignUpMode = false;
@@ -206,7 +196,7 @@
     var isGroupMode = false;
     var focusedMsgId = null;
     var toastTargetRoomId = null; 
-    var activeListeners = {}; // グローバル通知用リスナー保持オブジェクト
+    var activeListeners = {}; // エラー対策：ここで確実に定義する
 
     var OFFICIAL_EMAIL = "official@airtext.com";
 
@@ -246,6 +236,7 @@
                 var data = doc.data();
                 var isGroup = (data.type === "group");
                 var other = "";
+                
                 if (!isGroup) {
                     other = data.users[0] === me.email ? data.users[1] : data.users[0];
                 }
@@ -328,13 +319,12 @@
                         time: Date.now()
                     });
 
-                    // 初回歓迎メッセージ（既読リストは空配列からスタート）
                     db.collection("rooms").doc(linkId).collection("messages").add({
                         text: "AirTextへようこそ！ここには公式からの大切なお知らせが届きます。まずは友達を追加してチャットを始めてみましょう！",
                         sender: OFFICIAL_EMAIL,
                         time: Date.now(),
                         msgType: "text",
-                        readBy: [], 
+                        isRead: false,
                         reactions: {}
                     });
 
@@ -378,17 +368,36 @@
 
     document.getElementById('toSettingsBtn').onclick = function() { show('settingsView'); };
     document.getElementById('backFromSettings').onclick = function() { show('homeView'); };
+
+    // 【修正】プロフィール画像選択時の処理を安全化
     document.getElementById('avatarInput').onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
         var reader = new FileReader();
-        reader.onload = function() { document.getElementById('myAvatarPreview').src = reader.result; };
-        if (e.target.files[0]) reader.readAsDataURL(e.target.files[0]);
+        reader.onload = function(event) {
+            document.getElementById('myAvatarPreview').src = event.target.result;
+            myAvatar = event.target.result; 
+        };
+        reader.readAsDataURL(file);
     };
+
+    // 【修正】画像データを確実にFirestoreに同期（相手へのアイコン反映バグ対策）
     document.getElementById('saveSettingsBtn').onclick = function() {
         var name = document.getElementById('nicknameInput').value.trim();
-        var avatar = document.getElementById('myAvatarPreview').src;
-        db.collection("profiles").doc(me.email).set({ name: name, avatar: avatar.indexOf('data') === 0 ? avatar : myAvatar }, { merge: true }).then(function() {
+        var avatarSrc = document.getElementById('myAvatarPreview').src;
+        
+        if (avatarSrc.indexOf('data:image/svg+xml') === 0) {
+            avatarSrc = "";
+        }
+
+        db.collection("profiles").doc(me.email).set({ 
+            name: name, 
+            avatar: avatarSrc 
+        }, { merge: true }).then(function() {
             alert("プロフィールを保存しました");
             show('homeView');
+        }).catch(function(err) {
+            alert("保存に失敗しました: " + err.message);
         });
     };
 
@@ -482,7 +491,7 @@
         db.collection("contact_links").where("users", "array-contains", me.email).onSnapshot(function(snap) {
             snap.forEach(function(d) {
                 var roomId = d.id;
-                if (activeListeners[roomId]) return;
+                if (activeListeners[roomId]) return; 
 
                 activeListeners[roomId] = db.collection("rooms").doc(roomId).collection("messages")
                     .orderBy("time", "desc").limit(1).onSnapshot(function(mSnap) {
@@ -553,14 +562,6 @@
                 var msgId = d.id;
                 var isMe = (data.sender === me.email);
                 
-                // 【バグB修正：受信時】自分がメッセージを閲覧したら自分のアドレスをreadByへ追加
-                var readByArray = data.readBy || [];
-                if (!isMe && !readByArray.includes(me.email)) {
-                    db.collection("rooms").doc(activeRoomId).collection("messages").doc(msgId).update({
-                        readBy: firebase.firestore.FieldValue.arrayUnion(me.email)
-                    });
-                }
-                
                 var container = document.createElement('div');
                 container.className = "msg-container " + (isMe ? 'sent' : 'received');
                 
@@ -589,18 +590,20 @@
                     e.preventDefault();
                     popupMenu(e.clientX, e.clientY, msgId, isMe);
                 });
-
                 var meta = document.createElement('div');
                 meta.className = "msg-meta";
                 var timeStr = formatTime(data.time);
-
-                // 【バグB修正：表示時】readBy配列の中に相手のアドレスが1つでも入っていればシンプルに既読と判定
                 if (isMe) {
-                    var isRead = readByArray.length > 0;
-                    var readText = isRead ? "既読 " : "";
+                    var readText = (partnerInRoom || data.isRead) ? "既読 " : "";
                     meta.innerText = (isGroupMode ? "" : readText) + timeStr;
+                    if (partnerInRoom && !data.isRead) {
+                        db.collection("rooms").doc(activeRoomId).collection("messages").doc(msgId).update({ isRead: true });
+                    }
                 } else {
                     meta.innerText = timeStr;
+                    if (!data.isRead) {
+                        db.collection("rooms").doc(activeRoomId).collection("messages").doc(msgId).update({ isRead: true });
+                    }
                 }
 
                 var heartBadge = document.createElement('div');
@@ -645,7 +648,6 @@
             document.getElementById('msgMenu').style.display = 'none';
         }
     });
-
     var emojiOpts = document.querySelectorAll('.emoji-opt');
     for(var i=0; i<emojiOpts.length; i++) {
         emojiOpts[i].onclick = function(e) {
@@ -657,7 +659,7 @@
                     var currentData = resDoc.data();
                     var rMap = currentData.reactions || {};
                     if(!rMap[chosenEmoji]) rMap[chosenEmoji] = [];
-                        
+      
                     if(rMap[chosenEmoji].includes(me.email)) {
                         rMap[chosenEmoji] = rMap[chosenEmoji].filter(function(u) { return u !== me.email; });
                     } else {
@@ -694,18 +696,12 @@
         var text = input.value.trim();
         if (!text || !activeRoomId) return;
 
-        // 【バグB修正：送信時】readByには自分（me.email）のアドレスを最初から絶対に入れない
-        var initialReadBy = [];
-        if (partnerInRoom && targetEmail) {
-            initialReadBy.push(targetEmail);
-        }
-
         var msgData = {
             text: text,
             sender: me.email,
             time: Date.now(),
             msgType: "text",
-            readBy: initialReadBy, 
+            isRead: partnerInRoom,
             reactions: {}
         };
         input.value = "";
@@ -722,42 +718,25 @@
     document.getElementById('clipBtn').onclick = function() {
         document.getElementById('imageFileInput').click();
     };
-
-    // 【バグA修正】Storageへの送信を廃止し、完全無料でFirestoreに直接Base64データを保存
     document.getElementById('imageFileInput').onchange = function(e) {
         var file = e.target.files[0];
         if(!file) return;
-
-        var reader = new FileReader();
-        reader.onload = function(event) {
-            var base64Data = event.target.result;
-
-            // 【バグB修正】画像送信時の既読リストの初期化
-            var initialReadBy = [];
-            if (partnerInRoom && targetEmail) {
-                initialReadBy.push(targetEmail);
-            }
-
+        var storageRef = storage.ref('airtext_photos/' + activeRoomId + '/' + Date.now() + '_' + file.name);
+        storageRef.put(file).then(function(snapshot) {
+            return snapshot.ref.getDownloadURL();
+        }).then(function(downloadURL) {
             var msgData = {
-                url: base64Data, 
+                url: downloadURL,
                 sender: me.email,
                 time: Date.now(),
                 msgType: "image",
-                readBy: initialReadBy,
+                isRead: partnerInRoom,
                 reactions: {}
             };
-
-            db.collection("rooms").doc(activeRoomId).collection("messages").add(msgData).then(function() {
-                if (!partnerInRoom && !isGroupMode) {
-                    db.collection("room_status").doc(activeRoomId).set({ unread: targetEmail }, { merge: true });
-                } else if (isGroupMode) {
-                    db.collection("room_status").doc(activeRoomId).set({ unread: "group_update" }, { merge: true });
-                }
-            }).catch(function(err) {
-                alert("画像の送信に失敗しました: " + err.message);
-            });
-        };
-        reader.readAsDataURL(file); 
+            db.collection("rooms").doc(activeRoomId).collection("messages").add(msgData);
+        }).catch(function(err) {
+            alert("画像の送信に失敗しました: " + err.message);
+        });
     };
 
     document.getElementById('sendBtn').onclick = send;
@@ -766,6 +745,16 @@
 
     document.getElementById('logoutBtn').onclick = function() {
         if (confirm("ログアウトしますか？")) {
+            // 【安全化】ログアウト時にすべてのメッセージ監視（リスナー）をエラー出さずに安全に停止
+            if (activeListeners) {
+                for (var key in activeListeners) {
+                    if (typeof activeListeners[key] === 'function') {
+                        try { activeListeners[key](); } catch(e) {}
+                    }
+                }
+                activeListeners = {};
+            }
+
             auth.signOut().then(function() {
                 alert("ログアウトしました");
                 if (chatUnsub) chatUnsub();
@@ -778,6 +767,6 @@
             });
         }
     };
-    </script>
+</script>
 </body>
 </html>
